@@ -2,9 +2,9 @@ DeskSync Database Schema (V1)
 
 This document outlines the core Entity Relationship Diagram (ERD) for the DeskSync booking engine. The schema is designed to be fully relational and supports multiple social logins per user, precise hourly booking, and asynchronous background notifications.
 
-Entity Relationship Diagram
-
 DeskSync Schema Diagram
+
+![DeskSync Schema Diagram](DeskSync_Schema_Diagram.drawio.svg)
 
 Schema Breakdown
 
