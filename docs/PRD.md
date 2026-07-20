@@ -76,6 +76,24 @@
 - [ ] The system does not allow public registration for Staff roles (Admin accounts must be seeded or created by a Super Admin).
     
 - [ ] Staff login flows strictly require Two-Factor Authentication (2FA) for security.
+
+**Story 1.3: Social Authentication & Account Linking**
+
+> As a standard user, I want to seamlessly use social logins and link multiple accounts, so that I never get locked out or accidentally create duplicate profiles.
+
+**Acceptance Criteria**
+
+- [ ] The Initial Signup: If a user registers via a social provider, the system populates their profile email but explicitly leaves the password null.
+
+- [ ] Edge Case A (Password Fallback): If a social-only user attempts to log in via the standard Email/Password form, the system returns "Invalid credentials" (requiring them to use "Forgot Password" to set one).
+
+- [ ] Edge Case B (Duplicate Signup): If a user attempts to sign up via the standard registration form using an email already tied to a social account, the system rejects it as a duplicate.
+
+- [ ] Edge Case C (Auto-Linking): If a user logs in with a new social provider using an email that already exists, the system auto-links the accounts ONLY if both providers return email_verified: true.
+
+- [ ] Edge Case C (Collision Rejection): If the new social provider's email is unverified (or the existing one is), the system blocks the login and prompts the user to log in via their original method.
+
+- [ ] Explicit Linking: Authenticated users can explicitly link new social providers (e.g., Apple, Microsoft) from their profile settings page.
     
 
 ### Epic 2: The Booking Engine
