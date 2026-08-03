@@ -33,8 +33,7 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
         builder.Property(r => r.Status)
                .IsRequired()
                .HasConversion<string>()
-               .HasMaxLength(50)
-               .HasDefaultValue(RoomStatus.Free);
+               .HasMaxLength(50);
 
         builder.Property(r => r.HasProjector)
                .IsRequired()
@@ -47,8 +46,7 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
         builder.Property(r => r.RecommendedUse)
                .IsRequired()
                .HasConversion<string>()
-               .HasMaxLength(50)
-               .HasDefaultValue(RoomRecommendedUse.Solo);
+               .HasMaxLength(50);
 
         builder.Property(r => r.PricePerHour)
                .IsRequired()

@@ -13,8 +13,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Role)
                .IsRequired()
                .HasConversion<string>()
-               .HasMaxLength(50)
-               .HasDefaultValue(UserRole.Standard);
+               .HasMaxLength(50);
 
         builder.Property(u => u.FirstName)
                .IsRequired(false)
