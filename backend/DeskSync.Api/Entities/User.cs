@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace DeskSync.Api.Entities;
 
 public enum UserRole
@@ -16,6 +18,10 @@ public class User
     public string Email { get; private set; }
     public string? Password { get; private set; }
     public bool EmailNotificationEnabled { get; private set; }
+
+    private static readonly Regex EmailRegex = new(
+        @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public User(
         Guid id,
@@ -61,7 +67,16 @@ public class User
         EmailNotificationEnabled = emailNotificationEnabled;
     }
 
-    public void UpdateEmail(string email) => Email = email;
+    public void UpdateEmail(string newEmail)
+    {
+        if (string.IsNullOrWhiteSpace(newEmail))
+            throw new ArgumentException("Email cannot be empty.");
+
+        if (!EmailRegex.IsMatch(newEmail))
+            throw new ArgumentException("Invalid email format.");
+
+        Email = newEmail;
+    }
 
     public void UpdatePassword(string? password) => Password = password;
 }
