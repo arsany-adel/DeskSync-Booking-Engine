@@ -15,6 +15,16 @@ public class UserRepository(AppDbContext context) : IUserRepository
         return await _context.Users.FindAsync(id);
     }
 
+    public async Task<User?> GetUserByUsernameAsync(string username)
+    {
+        return await _context.Users.FirstOrDefaultAsync(user => user.Username == username);
+    }
+
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        return await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
+    }
+
     public async Task<bool> IsEmailUnique(string email)
     {
         return await _context.Users.FirstOrDefaultAsync(user => user.Email == email) == null;
@@ -37,11 +47,6 @@ public class UserRepository(AppDbContext context) : IUserRepository
                                          .ExecuteDeleteAsync();
         
         return affectedRows > 0;
-    }
-
-    public async Task<User?> GetUserByUsernameAsync(string username)
-    {
-        return await _context.Users.FirstOrDefaultAsync(user => user.Username == username);
     }
 
     public async Task SaveChangesAsync() => await _context.SaveChangesAsync(); 
