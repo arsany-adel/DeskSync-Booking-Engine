@@ -5,7 +5,7 @@ namespace DeskSync.Api.Extensions.Mappers;
 
 public static class UserMapperExtension
 {
-    public static User ToEntity(this RegisterStandardUserRequestDto dto, string passwordHash)
+    public static User ToEntity(this RegisterStandardUserRequestDto dto, string? passwordHash)
     {
         return new User(
             id: Guid.NewGuid(),
