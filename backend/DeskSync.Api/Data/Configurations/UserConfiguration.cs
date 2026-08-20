@@ -33,7 +33,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
        builder.Property(u => u.PasswordHash)
               .IsRequired(false)
-              .HasMaxLength(64);
+              .HasMaxLength(128);
 
        builder.Property(u => u.EmailNotificationEnabled)
               .IsRequired()
