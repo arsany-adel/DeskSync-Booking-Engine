@@ -45,6 +45,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         }
     }
 
+    // This route expects the refresh token (and not the access token) in the Authorization header instead of a JSON body
     [HttpPost("refresh")]
     [ProducesResponseType(typeof(AccessTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
