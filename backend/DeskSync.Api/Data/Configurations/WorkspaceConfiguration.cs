@@ -29,5 +29,17 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.Property(w => w.GoogleMapsLocation)
                .IsRequired(false)
                .HasMaxLength(1000);
+
+        // Database Seeding
+        builder.HasData(
+            new Workspace(
+                id: Guid.Parse("11111111-1111-1111-1111-111111111111"), 
+                name: "Default Workspace",
+                description: "The primary workspace configured via database seeding.",
+                logoUrl: null,
+                address: "Main HQ Address",
+                googleMapsLocation: null
+            )
+        );
     }
 }
