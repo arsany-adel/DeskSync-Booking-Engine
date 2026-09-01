@@ -16,7 +16,7 @@ public class User
     public string? LastName { get; private set; }
     public string Username { get; private set; }
     public string Email { get; private set; }
-    public string? Password { get; private set; }
+    public string? PasswordHash { get; private set; }
     public bool EmailNotificationEnabled { get; private set; }
 
     private static readonly Regex EmailRegex = new(
@@ -29,7 +29,7 @@ public class User
         string? firstName,
         string? lastName,
         string email,
-        string? password,
+        string? passwordHash,
         UserRole role = UserRole.Standard,
         bool emailNotificationEnabled = false
     )
@@ -46,7 +46,7 @@ public class User
         LastName = lastName;
         Username = username;
         Email = email;
-        Password = password;
+        PasswordHash = passwordHash;
         EmailNotificationEnabled = emailNotificationEnabled;
     }
 
@@ -78,5 +78,5 @@ public class User
         Email = newEmail;
     }
 
-    public void UpdatePassword(string? password) => Password = password;
+    public void UpdatePassword(string? passwordHash) => PasswordHash = passwordHash;
 }
