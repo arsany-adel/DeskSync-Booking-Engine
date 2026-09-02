@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using DeskSync.Api.DTOs.Rooms;
-using DeskSync.Api.Repositories.Interfaces;
+using DeskSync.Api.Services.Interfaces;
 
 namespace DeskSync.Api.Controllers;
 
 [ApiController]
 [Route("/api/room")]
-[Authorize(Roles = "Admin")]
+
 public class RoomsController : ControllerBase
 {
     private readonly IRoomService _roomService;
@@ -20,6 +20,7 @@ public class RoomsController : ControllerBase
     [HttpPost("create")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RoomResponseDto>> Create([FromBody] CreateRoomDto dto)
     {
         try
@@ -36,7 +37,7 @@ public class RoomsController : ControllerBase
     [HttpGet("get/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [Authorize(Roles = "Admin,User")]
+    [Authorize(Roles = "Admin,Standard")]
     public async Task<ActionResult<RoomResponseDto>> GetById(Guid id)
     {
         var room = await _roomService.GetRoomByIdAsync(id);
@@ -48,7 +49,7 @@ public class RoomsController : ControllerBase
 
     [HttpGet("get-all")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [Authorize(Roles = "Admin,User")]
+    [Authorize(Roles = "Admin,Standard")]
     public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetAll()
     {
         var rooms = await _roomService.GetAllRoomsAsync();
@@ -59,6 +60,7 @@ public class RoomsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RoomResponseDto>> Update(Guid id, [FromBody] UpdateRoomDto dto)
     {
         try
@@ -78,6 +80,7 @@ public class RoomsController : ControllerBase
     [HttpDelete("delete/{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Delete(Guid id)
     {
         var deleted = await _roomService.DeleteRoomAsync(id);
@@ -91,6 +94,7 @@ public class RoomsController : ControllerBase
     //for future updates
     [HttpGet("workspace/{workspaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetByWorkspace(Guid workspaceId)
     {
         var rooms = await _roomService.GetRoomsByWorkspaceAsync(workspaceId);

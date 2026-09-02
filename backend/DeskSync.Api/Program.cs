@@ -6,6 +6,7 @@ using DeskSync.Api.Services;
 using DeskSync.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +28,11 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddScoped<IRoomService, RoomService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());// Converts enums to strings in Swagger and JSON responses
+    });
 
 builder.Services.AddAuthentication(defaultScheme: "Bearer")
     .AddBearerToken("Bearer");

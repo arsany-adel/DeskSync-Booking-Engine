@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 using DeskSync.Api.Data;
 using DeskSync.Api.DTOs.Rooms;
 using DeskSync.Api.Entities;
-using DeskSync.Api.Repositories.Interfaces;
+using DeskSync.Api.Services.Interfaces;
 using DeskSync.Api.Extensions.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace DeskSync.Api.Repositories
+namespace DeskSync.Api.Services
 {
     public class RoomService(AppDbContext context) : IRoomService
     {

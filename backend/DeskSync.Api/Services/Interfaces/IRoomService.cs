@@ -1,6 +1,6 @@
 using DeskSync.Api.DTOs.Rooms;
 
-namespace DeskSync.Api.Repositories.Interfaces;
+namespace DeskSync.Api.Services.Interfaces;
 
 public interface IRoomService
 {
