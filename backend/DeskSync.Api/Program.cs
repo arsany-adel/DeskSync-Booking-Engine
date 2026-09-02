@@ -25,6 +25,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
+builder.Services.AddScoped<IRoomService, RoomService>();
+
 builder.Services.AddControllers();
 
 builder.Services.AddAuthentication(defaultScheme: "Bearer")
