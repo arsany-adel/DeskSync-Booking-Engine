@@ -1,8 +1,8 @@
 using DeskSync.Api.DTOs.Rooms;
 
-namespace DeskSync.Api.Services.Interfaces;
+namespace DeskSync.Api.Repositories.Interfaces;
 
-public interface IRoomService
+public interface IRoomRepository
 {
     Task<RoomResponseDto> CreateRoomAsync(CreateRoomDto dto);
     Task<RoomResponseDto?> GetRoomByIdAsync(Guid id);

@@ -1,20 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using DeskSync.Api.DTOs.Rooms;
-using DeskSync.Api.Services.Interfaces;
+using DeskSync.Api.Repositories.Interfaces;
 
 namespace DeskSync.Api.Controllers;
 
 [ApiController]
-[Route("/api/room")]
+[Route("/api/rooms")]
 
 public class RoomsController : ControllerBase
 {
-    private readonly IRoomService _roomService;
+    private readonly IRoomRepository _RoomRepository;
 
-    public RoomsController(IRoomService roomService)
+    public RoomsController(IRoomRepository RoomRepository)
     {
-        _roomService = roomService;
+        _RoomRepository = RoomRepository;
     }
 
     [HttpPost("create")]
@@ -25,7 +25,7 @@ public class RoomsController : ControllerBase
     {
         try
         {
-            var room = await _roomService.CreateRoomAsync(dto);
+            var room = await _RoomRepository.CreateRoomAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = room.Id }, room);
         }
         catch (ArgumentException ex) 
@@ -40,7 +40,7 @@ public class RoomsController : ControllerBase
     [Authorize(Roles = "Admin,Standard")]
     public async Task<ActionResult<RoomResponseDto>> GetById(Guid id)
     {
-        var room = await _roomService.GetRoomByIdAsync(id);
+        var room = await _RoomRepository.GetRoomByIdAsync(id);
         
         if (room == null) return NotFound();
 
@@ -52,7 +52,7 @@ public class RoomsController : ControllerBase
     [Authorize(Roles = "Admin,Standard")]
     public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetAll()
     {
-        var rooms = await _roomService.GetAllRoomsAsync();
+        var rooms = await _RoomRepository.GetAllRoomsAsync();
         return Ok(rooms);
     }
 
@@ -65,7 +65,7 @@ public class RoomsController : ControllerBase
     {
         try
         {
-            var updatedRoom = await _roomService.UpdateRoomAsync(id, dto);
+            var updatedRoom = await _RoomRepository.UpdateRoomAsync(id, dto);
             
             if (updatedRoom == null) return NotFound();
 
@@ -83,7 +83,7 @@ public class RoomsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Delete(Guid id)
     {
-        var deleted = await _roomService.DeleteRoomAsync(id);
+        var deleted = await _RoomRepository.DeleteRoomAsync(id);
         
         if (!deleted) return NotFound();
 
@@ -97,7 +97,7 @@ public class RoomsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetByWorkspace(Guid workspaceId)
     {
-        var rooms = await _roomService.GetRoomsByWorkspaceAsync(workspaceId);
+        var rooms = await _RoomRepository.GetRoomsByWorkspaceAsync(workspaceId);
         
         return Ok(rooms); 
     }
