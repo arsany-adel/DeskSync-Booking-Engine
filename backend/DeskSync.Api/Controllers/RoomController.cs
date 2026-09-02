@@ -36,6 +36,7 @@ public class RoomsController : ControllerBase
     [HttpGet("get/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Roles = "Admin,User")]
     public async Task<ActionResult<RoomResponseDto>> GetById(Guid id)
     {
         var room = await _roomService.GetRoomByIdAsync(id);
@@ -47,6 +48,7 @@ public class RoomsController : ControllerBase
 
     [HttpGet("get-all")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Roles = "Admin,User")]
     public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetAll()
     {
         var rooms = await _roomService.GetAllRoomsAsync();
