@@ -6,14 +6,9 @@ namespace DeskSync.Api.Controllers;
 
 [ApiController]
 [Route("/api/rooms")]
-public class RoomsController : ControllerBase
+public class RoomsController(IRoomService RoomService) : ControllerBase
 {
-    private readonly IRoomService _RoomService;
-
-    public RoomsController(IRoomService RoomService)
-    {
-        _RoomService = RoomService;
-    }
+    private readonly IRoomService _RoomService = RoomService;
 
     [HttpPost("create")]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -84,7 +79,7 @@ public class RoomsController : ControllerBase
     [HttpGet("workspace/{workspaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetByWorkspace(Guid workspaceId)
+    public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetRoomsByWorkspaceId(Guid workspaceId)
     {
         var rooms = await _RoomService.GetRoomsByWorkspaceAsync(workspaceId);
         
