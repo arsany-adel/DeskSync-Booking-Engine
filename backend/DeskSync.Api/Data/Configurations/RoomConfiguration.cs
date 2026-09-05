@@ -52,5 +52,14 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
                .IsRequired()
                .HasPrecision(10, 2)
                .HasDefaultValue(0m);
+       
+       //Save the enum as text (a string) in the DB instead of an integer
+       builder.Property(r => r.Status)
+               .HasConversion<string>();
+
+        builder.Property(r => r.RecommendedUse)
+               .HasConversion<string>();
+       
+
     }
 }
