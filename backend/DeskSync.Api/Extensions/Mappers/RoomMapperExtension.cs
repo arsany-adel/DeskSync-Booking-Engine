@@ -3,21 +3,21 @@ using DeskSync.Api.Entities;
 
 namespace DeskSync.Api.Extensions.Mappers;
 
-public class RoomMapperExtension
+public static class RoomMapperExtension
 {
-    public static RoomResponseDto MapToDto(Room room)
+    public static Room MapToEntity(this RoomResponseDto roomDto)
     {
-        return new RoomResponseDto(
-            room.Id,
-            room.WorkspaceId,
-            room.Name,
-            room.Description,
-            room.NoOfChairs,
-            room.PricePerHour,
-            room.Status,
-            room.HasProjector,
-            room.HasBoard,
-            room.RecommendedUse
+        return new Room(
+            roomDto.Id,
+            roomDto.WorkspaceId,
+            roomDto.Name,
+            roomDto.Description,
+            roomDto.NoOfChairs,
+            roomDto.PricePerHour,
+            roomDto.Status,
+            roomDto.HasProjector,
+            roomDto.HasBoard,
+            roomDto.RecommendedUse
         );
     }
 }

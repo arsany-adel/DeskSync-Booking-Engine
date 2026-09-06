@@ -8,5 +8,7 @@ public interface IRoomService
     Task<RoomResponseDto?> GetRoomByIdAsync(Guid id);
     Task<RoomResponseDto?> UpdateRoomAsync(Guid id, UpdateRoomDto dto);
     Task<bool> DeleteRoomAsync(Guid id);
-    Task<IEnumerable<RoomResponseDto>> GetRoomsByWorkspaceIdAsync(Guid workspaceId);
+    Task<IReadOnlyList<RoomResponseDto>> GetRoomsByWorkspaceIdAsync(Guid workspaceId);
+
+    
 }

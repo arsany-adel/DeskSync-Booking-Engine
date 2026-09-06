@@ -19,7 +19,6 @@ public record CreateRoomDto(
     string? Description, 
     
     [EnumDataType(typeof(RoomStatus), ErrorMessage = "INVALID_ROOM_STATUS")]
-    [StringLength(50, ErrorMessage = "ROOM_STATUS_TOO_LONG")]
     RoomStatus Status, 
     
     [Required(ErrorMessage = "ROOM_PROJECTOR_BOOL_REQUIRED")]
@@ -30,7 +29,6 @@ public record CreateRoomDto(
     
     [EnumDataType(typeof(RoomRecommendedUse), ErrorMessage = "INVALID_RECOMMENDED_USE")]
     [Required(ErrorMessage = "ROOM_RECOMMENDED_USE_REQUIRED")]
-    [StringLength(50, ErrorMessage = "ROOM_RECOMMENDED_USE_TOO_LONG")]
     RoomRecommendedUse RecommendedUse,
 
     [Range(1, 1000, ErrorMessage = "ROOM_CHAIRS_INVALID")]

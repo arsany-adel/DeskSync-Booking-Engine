@@ -8,7 +8,7 @@ namespace DeskSync.Api.Controllers;
 [Route("/api/rooms")]
 public class RoomsController(IRoomService RoomService) : ControllerBase
 {
-    private readonly IRoomService _RoomService = RoomService;
+    private readonly IRoomService _roomService = RoomService;
 
     [HttpPost("create")]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -18,7 +18,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     {
         try
         {
-            var room = await _RoomService.CreateRoomAsync(dto);
+            var room = await _roomService.CreateRoomAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = room.Id }, room);
         }
         catch (ArgumentException ex) 
@@ -32,7 +32,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoomResponseDto>> GetById(Guid id)
     {
-        var room = await _RoomService.GetRoomByIdAsync(id);
+        var room = await _roomService.GetRoomByIdAsync(id);
         
         if (room == null) return NotFound();
 
@@ -49,7 +49,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     {
         try
         {
-            var updatedRoom = await _RoomService.UpdateRoomAsync(id, dto);
+            var updatedRoom = await _roomService.UpdateRoomAsync(id, dto);
             
             if (updatedRoom == null) return NotFound();
 
@@ -67,7 +67,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Delete(Guid id)
     {
-        var deleted = await _RoomService.DeleteRoomAsync(id);
+        var deleted = await _roomService.DeleteRoomAsync(id);
         
         if (!deleted) return NotFound();
 
@@ -78,9 +78,9 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [HttpGet("workspace/{workspaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetRoomsByWorkspaceId(Guid workspaceId)
+    public async Task<ActionResult<IReadOnlyList<RoomResponseDto>>> GetRoomsByWorkspaceId(Guid workspaceId)
     {
-        var rooms = await _RoomService.GetRoomsByWorkspaceIdAsync(workspaceId);
+        var rooms = await _roomService.GetRoomsByWorkspaceIdAsync(workspaceId);
         
         return Ok(rooms); 
     }
