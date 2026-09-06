@@ -32,8 +32,8 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
         return await _roomRepository.DeleteRoomAsync(id);
     }
 
-    public async Task<IEnumerable<RoomResponseDto>> GetRoomsByWorkspaceAsync(Guid workspaceId)
+    public async Task<IEnumerable<RoomResponseDto>> GetRoomsByWorkspaceIdAsync(Guid workspaceId)
     {
-        return await _roomRepository.GetRoomsByWorkspaceAsync(workspaceId);
+        return await _roomRepository.GetRoomsByWorkspaceIdAsync(workspaceId);
     }
 }

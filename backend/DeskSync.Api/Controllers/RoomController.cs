@@ -30,7 +30,6 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [HttpGet("get/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [Authorize(Roles = "Admin,Standard")]
     public async Task<ActionResult<RoomResponseDto>> GetById(Guid id)
     {
         var room = await _RoomService.GetRoomByIdAsync(id);
@@ -81,7 +80,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<RoomResponseDto>>> GetRoomsByWorkspaceId(Guid workspaceId)
     {
-        var rooms = await _RoomService.GetRoomsByWorkspaceAsync(workspaceId);
+        var rooms = await _RoomService.GetRoomsByWorkspaceIdAsync(workspaceId);
         
         return Ok(rooms); 
     }

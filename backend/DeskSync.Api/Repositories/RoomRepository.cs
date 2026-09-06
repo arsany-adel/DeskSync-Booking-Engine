@@ -84,7 +84,7 @@ public class RoomRepository(AppDbContext context) : IRoomRepository
         return deletedRows > 0;
     }
 
-    public async Task<IEnumerable<RoomResponseDto>> GetRoomsByWorkspaceAsync(Guid workspaceId)
+    public async Task<IEnumerable<RoomResponseDto>> GetRoomsByWorkspaceIdAsync(Guid workspaceId)
     {
         return await _context
             .Rooms.AsNoTracking()
