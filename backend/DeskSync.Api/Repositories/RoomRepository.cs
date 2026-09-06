@@ -1,6 +1,5 @@
 using DeskSync.Api.Data;
 using DeskSync.Api.Entities;
-using DeskSync.Api.Extensions.Mappers;
 using DeskSync.Api.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,9 +17,14 @@ public class RoomRepository(AppDbContext context) : IRoomRepository
         return room;
     }
 
-    public async Task<Room?> GetRoomByIdAsync(Guid id)
+    public async Task<Room?> GetRoomByIdAsync(Guid id , bool trackingChanges = false)
     {
-        return await _context.Rooms.FindAsync(id);
+        if(trackingChanges)
+        {
+            return await _context.Rooms.FindAsync(id);
+        }
+        return await _context.Rooms.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+        
     }
 
     public async Task<bool> DeleteRoomAsync(Guid id)
