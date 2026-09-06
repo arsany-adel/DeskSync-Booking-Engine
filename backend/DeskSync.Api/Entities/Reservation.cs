@@ -11,12 +11,12 @@ public class Reservation
     // What the user intended
     public LocalDateTime LocalStartTime { get; private set; }
     public LocalDateTime LocalEndTime { get; private set; }
-    public string TimezoneId { get; private set; }
+    public string TimezoneId { get; private set; } //dah bi2olk tb3 2nhy dwla (dwr 3la IANNA list)
 
     // For DB optimization
     public Instant UtcStartTime { get; private set; }
     public Instant UtcEndTime { get; private set; }
-    public string TzdbVersion { get; private set; } = string.Empty;
+    public string TzdbVersion { get; private set; } = string.Empty; // dah al season al gw 
 
     // Metadata
     public Instant CreatedAt { get; private set; }
@@ -29,8 +29,8 @@ public class Reservation
         LocalDateTime localStartTime,
         LocalDateTime localEndTime,
         string timezoneId,
-        IDateTimeZoneProvider dateTimeZoneProvider,
-        IClock clock,
+        IDateTimeZoneProvider dateTimeZoneProvider, // used for CalculateUtcCaches
+        IClock clock, // for unit testing when creating a FakeClock 
         string? notes = null
     )
     {
@@ -65,8 +65,42 @@ public class Reservation
         TzdbVersion = tzProvider.VersionId;
     }
 
-    public void UpdateNotes(string? notes)
+    public void UpdateDetails(
+        LocalDateTime localStartTime,
+        LocalDateTime localEndTime,
+        string timezoneId,
+        string? notes,
+        IDateTimeZoneProvider tzProvider,
+        IClock clock)
     {
+        if (localStartTime > localEndTime)
+            throw new ArgumentException("Start time must be before end time");
+
+        if (string.IsNullOrWhiteSpace(timezoneId))
+            throw new ArgumentException("Timezone ID is required");
+
+        LocalStartTime = localStartTime;
+        LocalEndTime = localEndTime;
+        TimezoneId = timezoneId;
         Notes = notes;
+        CreatedAt = clock.GetCurrentInstant();
+
+        CalculateUtcCaches(tzProvider);
+    }
+
+    public void AdminUpdate(
+        Guid newRoomId,
+        Guid newUserId,
+        LocalDateTime localStartTime,
+        LocalDateTime localEndTime,
+        string timezoneId,
+        string? notes,
+        IDateTimeZoneProvider tzProvider,
+        IClock clock)
+    {
+        RoomId = newRoomId;
+        UserId = newUserId;
+
+        UpdateDetails(localStartTime, localEndTime, timezoneId, notes, tzProvider,clock);
     }
 }
