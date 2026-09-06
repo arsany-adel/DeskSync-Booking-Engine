@@ -39,7 +39,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
 
         if (room == null) return null;
 
-        return MapToDto(room);
+        return room.MapToDto();
     }
 
     public async Task<RoomResponseDto?> UpdateRoomAsync(Guid id, UpdateRoomDto dto)
@@ -61,7 +61,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
 
         await _roomRepository.SaveChangesAsync();
 
-        return MapToDto(room);
+        return room.MapToDto();
     }
 
     public async Task<bool> DeleteRoomAsync(Guid id)
@@ -74,21 +74,10 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
         var rooms = await _roomRepository.GetRoomsByWorkspaceIdAsync(workspaceId);
 
         return rooms
-            .Select(MapToDto)
+            .Select(room => room.MapToDto())
             .ToList()
             .AsReadOnly();
     }
 
-    private static RoomResponseDto MapToDto(Room room) => new(
-        room.Id,
-        room.WorkspaceId,
-        room.Name,
-        room.Description,
-        room.NoOfChairs,
-        room.PricePerHour,
-        room.Status,
-        room.HasProjector,
-        room.HasBoard,
-        room.RecommendedUse
-    );
+
 }

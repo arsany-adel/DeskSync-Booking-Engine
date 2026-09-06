@@ -20,4 +20,20 @@ public static class RoomMapperExtension
             roomDto.RecommendedUse
         );
     }
+
+    public static RoomResponseDto MapToDto(this Room room)
+    {
+        return new(
+            room.Id,
+            room.WorkspaceId,
+            room.Name,
+            room.Description,
+            room.NoOfChairs,
+            room.PricePerHour,
+            room.Status,
+            room.HasProjector,
+            room.HasBoard,
+            room.RecommendedUse
+        );
+    }
 }
