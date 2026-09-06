@@ -27,7 +27,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
 
         var room = responseDto.MapToEntity();
 
-        await _roomRepository.AddRoomAsync(room);
+        _roomRepository.AddRoom(room);
         await _roomRepository.SaveChangesAsync();
 
         return responseDto;

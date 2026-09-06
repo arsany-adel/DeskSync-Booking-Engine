@@ -12,9 +12,9 @@ public class RoomRepository(AppDbContext context) : IRoomRepository
 
     public async Task SaveChangesAsync() => await _context.SaveChangesAsync(); 
 
-    public async Task<Room> AddRoomAsync(Room room)
+    public Room AddRoom(Room room)
     {
-        await _context.Rooms.AddAsync(room);
+        _context.Rooms.Add(room);
         return room;
     }
 
