@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using DeskSync.Api.Middleware;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,11 +46,31 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddProblemDetails();
 
+builder.Services.AddScoped<ITzdbSyncService, TzdbSyncService>();
+
+//Hangfire
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(options => 
+        options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"))));
+
+builder.Services.AddHangfireServer();
+builder.Services.AddScoped<ITzdbSyncService, TzdbSyncService>();
+
 var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+//Hangfire
+app.UseHangfireDashboard("/hangfire");
+RecurringJob.AddOrUpdate<ITzdbSyncService>(
+    "tzdb-daily-sync",//ID for the  background job so if the deployment is restarted, the job will not be duplicated
+    service => service.SyncReservationsAsync(CancellationToken.None),
+    Cron.Daily(2));// Runs daily at 2:00 AM UTC
 
 app.Run();

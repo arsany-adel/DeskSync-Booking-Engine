@@ -11,12 +11,12 @@ public class Reservation
     // What the user intended
     public LocalDateTime LocalStartTime { get; private set; }
     public LocalDateTime LocalEndTime { get; private set; }
-    public string TimezoneId { get; private set; } //dah bi2olk tb3 2nhy dwla (dwr 3la IANNA list)
+    public string TimezoneId { get; private set; }
 
     // For DB optimization
     public Instant UtcStartTime { get; private set; }
     public Instant UtcEndTime { get; private set; }
-    public string TzdbVersion { get; private set; } = string.Empty; // dah al season al gw 
+    public string TzdbVersion { get; private set; } = string.Empty;
 
     // Metadata
     public Instant CreatedAt { get; private set; }
@@ -30,7 +30,7 @@ public class Reservation
         LocalDateTime localEndTime,
         string timezoneId,
         IDateTimeZoneProvider dateTimeZoneProvider, // used for CalculateUtcCaches
-        IClock clock, // for unit testing when creating a FakeClock 
+        IClock clock, // for unit testing when creating a FakeClock
         string? notes = null
     )
     {
@@ -71,7 +71,8 @@ public class Reservation
         string timezoneId,
         string? notes,
         IDateTimeZoneProvider tzProvider,
-        IClock clock)
+        IClock clock
+    )
     {
         if (localStartTime > localEndTime)
             throw new ArgumentException("Start time must be before end time");
@@ -96,11 +97,22 @@ public class Reservation
         string timezoneId,
         string? notes,
         IDateTimeZoneProvider tzProvider,
-        IClock clock)
+        IClock clock
+    )
     {
         RoomId = newRoomId;
         UserId = newUserId;
 
-        UpdateDetails(localStartTime, localEndTime, timezoneId, notes, tzProvider,clock);
+        UpdateDetails(localStartTime, localEndTime, timezoneId, notes, tzProvider, clock);
+    }
+
+    public void SyncWithTzdbVersion(string newTzdbVersion, IDateTimeZoneProvider tzProvider)
+    {
+        if (TzdbVersion == newTzdbVersion)
+            return;
+
+        CalculateUtcCaches(tzProvider);
+
+        TzdbVersion = newTzdbVersion;
     }
 }
