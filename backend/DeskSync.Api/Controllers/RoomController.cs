@@ -10,7 +10,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
 {
     private readonly IRoomService _roomService = RoomService;
 
-    [HttpPost("create")]
+    [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [Authorize(Roles = "Admin")]
@@ -27,7 +27,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
         }
     }
 
-    [HttpGet("get/{id}")]
+    [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoomResponseDto>> GetById(Guid id)
@@ -40,7 +40,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     }
 
 
-    [HttpPut("update/{id}")]
+    [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -61,7 +61,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
         }
     }
 
-    [HttpDelete("delete/{id}")]
+    [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [Authorize(Roles = "Admin")]
@@ -75,7 +75,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     }
 
     
-    [HttpGet("workspace/{workspaceId}")]
+    [HttpGet("workspace/{workspaceId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IReadOnlyList<RoomResponseDto>>> GetRoomsByWorkspaceId(Guid workspaceId)
