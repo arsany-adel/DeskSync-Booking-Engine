@@ -57,7 +57,6 @@ builder.Services.AddHangfire(config => config
         options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
 builder.Services.AddHangfireServer();
-builder.Services.AddScoped<ITzdbSyncService, TzdbSyncService>();
 
 var app = builder.Build();
 

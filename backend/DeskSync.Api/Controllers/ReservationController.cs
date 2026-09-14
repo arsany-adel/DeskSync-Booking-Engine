@@ -27,7 +27,7 @@ public class ReservationController(IReservationService reservationService) : Con
         return userId;
     }
 
-    [HttpPost("create")]
+    [HttpPost]
     public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto)
     {
         var userId = GetCurrentUserId();
@@ -51,7 +51,7 @@ public class ReservationController(IReservationService reservationService) : Con
         return Ok(result);
     }
 
-    [HttpGet("get/{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetReservation(Guid id)
     {
         var userId = User.IsInRole("Admin") ? (Guid?)null : GetCurrentUserId();
@@ -60,7 +60,7 @@ public class ReservationController(IReservationService reservationService) : Con
         return Ok(result);
     }
 
-    [HttpPut("update/{id}")]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateReservation(Guid id, [FromBody] UpdateReservationDto dto)
     {
         var userId = GetCurrentUserId();
@@ -69,7 +69,7 @@ public class ReservationController(IReservationService reservationService) : Con
         return Ok(result);
     }
 
-    [HttpDelete("delete/{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteReservation(Guid id)
     {
         var userId = GetCurrentUserId();
@@ -79,7 +79,7 @@ public class ReservationController(IReservationService reservationService) : Con
     }
 
     [AllowAnonymous]
-    [HttpGet("room/{roomId}/schedule")]
+    [HttpGet("room/{roomId:guid}/schedule")]
     public async Task<IActionResult> GetRoomSchedule(
         Guid roomId, 
         [FromQuery] LocalDateTime startDate, 
@@ -93,21 +93,16 @@ public class ReservationController(IReservationService reservationService) : Con
     [Authorize(Roles = "Admin")]
     [HttpGet("search")]
     public async Task<IActionResult> SearchReservations(
-        [FromQuery] Guid? roomId,
-        [FromQuery] Guid? userId,
-        [FromQuery] LocalDateTime? startDate,
-        [FromQuery] LocalDateTime? endDate,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int itemsPerPage = 10)
+        [FromQuery] ReservationSearchQuery query)
     {
         var result = await _reservationService.SearchReservationAsync(
-            roomId, userId, startDate, endDate, pageNumber, itemsPerPage);
-            
+            query.RoomId, query.UserId, query.StartDate, query.EndDate, query.PageNumber, query.PageSize);
+
         return Ok(result);
     }
 
     [Authorize(Roles = "Admin")]
-    [HttpPut("{id}/admin-update")]
+    [HttpPut("{id:guid}/admin-update")]
     public async Task<IActionResult> AdminUpdateReservation(Guid id, [FromBody] AdminUpdateReservationDto dto)
     {
         var result = await _reservationService.AdminUpdateReservation(id, dto);
@@ -115,7 +110,7 @@ public class ReservationController(IReservationService reservationService) : Con
     }
 
     [Authorize(Roles = "Admin")]
-    [HttpDelete("{id}/force-delete")]
+    [HttpDelete("{id:guid}/force-delete")]
     public async Task<IActionResult> AdminDeleteReservation(Guid id)
     {
         await _reservationService.AdminDeleteReservationAsync(id);

@@ -18,6 +18,22 @@ public class ReservationService(
     private readonly IDateTimeZoneProvider _tzProvider = tzProvider; // used for CalculateUtcCaches()
     private readonly IClock _clock = clock; // for unit testing when creating a FakeClock
 
+    private (Instant UtcStart, Instant UtcEnd) MapToUtcInstants(
+        LocalDateTime localStart,
+        LocalDateTime localEnd,
+        string timezoneId
+    )
+    {
+        var zone =
+            _tzProvider.GetZoneOrNull(timezoneId)
+            ?? throw new ArgumentException($"Invalid timezone ID: '{timezoneId}'.");
+
+        var utcStart = zone.AtLeniently(localStart).ToInstant();
+        var utcEnd = zone.AtLeniently(localEnd).ToInstant();
+
+        return (utcStart, utcEnd);
+    }
+
     public async Task<PagedResult<ReservationResponseDto>> SearchReservationAsync(
         Guid? roomId,
         Guid? userId,
@@ -50,7 +66,9 @@ public class ReservationService(
         AdminUpdateReservationDto dto
     )
     {
-        var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId, true);
+        var reservation = await _reservationRepository.GetTrackedReservationByIdAsync(
+            reservationId
+        );
 
         if (reservation == null)
         {
@@ -62,10 +80,16 @@ public class ReservationService(
             throw new ArgumentException("End time must be strictly after start time.");
         }
 
-        var isAvailableTime = await _reservationRepository.IsRoomAvailableAsync(
-            dto.RoomId,
+        var (utcStart, utcEnd) = MapToUtcInstants(
             dto.LocalStartTime,
             dto.LocalEndTime,
+            dto.TimezoneId
+        );
+
+        var isAvailableTime = await _reservationRepository.IsRoomAvailableAsync(
+            dto.RoomId,
+            utcStart,
+            utcEnd,
             reservationId
         );
 
@@ -98,7 +122,9 @@ public class ReservationService(
         Guid userId
     )
     {
-        var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId, true);
+        var reservation = await _reservationRepository.GetTrackedReservationByIdAsync(
+            reservationId
+        );
 
         if (reservation == null)
         {
@@ -110,16 +136,21 @@ public class ReservationService(
             throw new UnauthorizedAccessException("You can only delete your own reservations.");
         }
 
-
         if (dto.LocalEndTime <= dto.LocalStartTime)
         {
             throw new ArgumentException("End time must be strictly after start time.");
         }
 
-        var isAvailableTime = await _reservationRepository.IsRoomAvailableAsync(
-            reservation.RoomId,
+        var (utcStart, utcEnd) = MapToUtcInstants(
             dto.LocalStartTime,
             dto.LocalEndTime,
+            dto.TimezoneId
+        );
+
+        var isAvailableTime = await _reservationRepository.IsRoomAvailableAsync(
+            reservation.RoomId,
+            utcStart,
+            utcEnd,
             reservationId
         );
 
@@ -154,10 +185,16 @@ public class ReservationService(
             throw new ArgumentException("End time must be strictly after start time.");
         }
 
+        var (utcStart, utcEnd) = MapToUtcInstants(
+            dto.LocalStartTime,
+            dto.LocalEndTime,
+            dto.TimezoneId
+        );
+
         var isAvailableTime = await _reservationRepository.IsRoomAvailableAsync(
             dto.RoomId,
-            dto.LocalStartTime,
-            dto.LocalEndTime
+            utcStart,
+            utcEnd
         );
 
         if (!isAvailableTime)
@@ -182,10 +219,7 @@ public class ReservationService(
 
     public async Task DeleteReservationAsync(Guid reservationId, Guid userId)
     {
-        var reservation = await _reservationRepository.GetReservationByIdAsync(
-            reservationId,
-            trackChanges: false
-        );
+        var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId);
 
         if (reservation == null)
         {
@@ -209,10 +243,7 @@ public class ReservationService(
 
     public async Task AdminDeleteReservationAsync(Guid reservationId)
     {
-        var reservation = await _reservationRepository.GetReservationByIdAsync(
-            reservationId,
-            trackChanges: false
-        );
+        var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId);
 
         if (reservation == null)
         {
@@ -234,10 +265,7 @@ public class ReservationService(
         Guid? currentUserId = null
     )
     {
-        var reservation = await _reservationRepository.GetReservationByIdAsync(
-            reservationId,
-            trackChanges: false
-        );
+        var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId);
 
         if (reservation == null)
         {

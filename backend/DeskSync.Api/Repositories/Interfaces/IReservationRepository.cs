@@ -19,8 +19,8 @@ public interface IReservationRepository
         Guid roomId, 
         LocalDateTime startDate, 
         LocalDateTime endDate);
-
-    Task<Reservation?> GetReservationByIdAsync(Guid id, bool trackChanges = false);
+    Task<Reservation?> GetTrackedReservationByIdAsync(Guid id);
+    Task<Reservation?> GetReservationByIdAsync(Guid id);
 
     Reservation  AddReservation(Reservation reservation);
 
@@ -28,8 +28,8 @@ public interface IReservationRepository
 
     Task<bool> IsRoomAvailableAsync(
         Guid roomId, 
-        LocalDateTime localStartTime, 
-        LocalDateTime localEndTime, 
+        Instant utcStartTime,
+        Instant utcEndTime, 
         Guid? excludeReservationId = null);
     
     Task SaveChangesAsync();
