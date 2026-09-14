@@ -29,8 +29,8 @@ public class Reservation
         LocalDateTime localStartTime,
         LocalDateTime localEndTime,
         string timezoneId,
-        IDateTimeZoneProvider dateTimeZoneProvider,
-        IClock clock,
+        IDateTimeZoneProvider dateTimeZoneProvider, // used for CalculateUtcCaches
+        IClock clock, // for unit testing when creating a FakeClock
         string? notes = null
     )
     {
@@ -65,8 +65,54 @@ public class Reservation
         TzdbVersion = tzProvider.VersionId;
     }
 
-    public void UpdateNotes(string? notes)
+    public void UpdateDetails(
+        LocalDateTime localStartTime,
+        LocalDateTime localEndTime,
+        string timezoneId,
+        string? notes,
+        IDateTimeZoneProvider tzProvider,
+        IClock clock
+    )
     {
+        if (localStartTime > localEndTime)
+            throw new ArgumentException("Start time must be before end time");
+
+        if (string.IsNullOrWhiteSpace(timezoneId))
+            throw new ArgumentException("Timezone ID is required");
+
+        LocalStartTime = localStartTime;
+        LocalEndTime = localEndTime;
+        TimezoneId = timezoneId;
         Notes = notes;
+        CreatedAt = clock.GetCurrentInstant();
+
+        CalculateUtcCaches(tzProvider);
+    }
+
+    public void AdminUpdate(
+        Guid newRoomId,
+        Guid newUserId,
+        LocalDateTime localStartTime,
+        LocalDateTime localEndTime,
+        string timezoneId,
+        string? notes,
+        IDateTimeZoneProvider tzProvider,
+        IClock clock
+    )
+    {
+        RoomId = newRoomId;
+        UserId = newUserId;
+
+        UpdateDetails(localStartTime, localEndTime, timezoneId, notes, tzProvider, clock);
+    }
+
+    public void SyncWithTzdbVersion(string newTzdbVersion, IDateTimeZoneProvider tzProvider)
+    {
+        if (TzdbVersion == newTzdbVersion)
+            return;
+
+        CalculateUtcCaches(tzProvider);
+
+        TzdbVersion = newTzdbVersion;
     }
 }
