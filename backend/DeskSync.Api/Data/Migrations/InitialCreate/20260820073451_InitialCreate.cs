@@ -22,7 +22,7 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
                     LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Username = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Password = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    PasswordHash = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     EmailNotificationEnabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
@@ -172,6 +172,18 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
                 name: "IX_UserLogins_UserId",
                 table: "UserLogins",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                table: "Users",
+                column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Username",
+                table: "Users",
+                column: "Username",
+                unique: true);
         }
 
         /// <inheritdoc />
