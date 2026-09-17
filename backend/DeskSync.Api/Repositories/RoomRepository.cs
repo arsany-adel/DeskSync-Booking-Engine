@@ -17,14 +17,14 @@ public class RoomRepository(AppDbContext context) : IRoomRepository
         return room;
     }
 
-    public async Task<Room?> GetRoomByIdAsync(Guid id , bool trackingChanges = false)
+    public async Task<Room?> GetRoomByIdAsync(Guid id)
     {
-        if(trackingChanges)
-        {
-            return await _context.Rooms.FindAsync(id);
-        }
         return await _context.Rooms.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
-        
+    }
+
+    public async Task<Room?> GetRoomByIdTrackedAsync(Guid id)
+    {
+        return await _context.Rooms.FindAsync(id);
     }
 
     public async Task<bool> DeleteRoomAsync(Guid id)
