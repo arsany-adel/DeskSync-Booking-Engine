@@ -14,12 +14,12 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<RoomResponseDto>> Create([FromBody] CreateRoomDto dto)
+    public async Task<ActionResult<RoomResponseDto>> CreateRoom([FromBody] CreateRoomDto dto)
     {
         try
         {
             var room = await _roomService.CreateRoomAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = room.Id }, room);
+            return CreatedAtAction(nameof(GetRoomById), new { id = room.Id }, room);
         }
         catch (ArgumentException ex) 
         {
@@ -30,7 +30,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RoomResponseDto>> GetById(Guid id)
+    public async Task<ActionResult<RoomResponseDto>> GetRoomById(Guid id)
     {
         var room = await _roomService.GetRoomByIdAsync(id);
         
@@ -45,7 +45,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<RoomResponseDto>> Update(Guid id, [FromBody] UpdateRoomDto dto)
+    public async Task<ActionResult<RoomResponseDto>> UpdateRoom(Guid id, [FromBody] UpdateRoomDto dto)
     {
         try
         {
@@ -65,7 +65,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult> Delete(Guid id)
+    public async Task<ActionResult> DeleteRoom(Guid id)
     {
         var deleted = await _roomService.DeleteRoomAsync(id);
         
