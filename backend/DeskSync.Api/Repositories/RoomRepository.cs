@@ -17,12 +17,12 @@ public class RoomRepository(AppDbContext context) : IRoomRepository
         return room;
     }
 
-    public async Task<Room?> GetRoomByIdAsync(Guid id)
+    public async Task<Room?> GetRoomByIdReadOnlyAsync(Guid id)
     {
         return await _context.Rooms.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
     }
 
-    public async Task<Room?> GetRoomByIdTrackedAsync(Guid id)
+    public async Task<Room?> GetRoomByIdAsync(Guid id)
     {
         return await _context.Rooms.FindAsync(id);
     }

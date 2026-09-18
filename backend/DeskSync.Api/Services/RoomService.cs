@@ -33,9 +33,9 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
         return responseDto;
     }
 
-    public async Task<RoomResponseDto?> GetRoomByIdAsync(Guid id)
+    public async Task<RoomResponseDto?> GetRoomByIdReadOnlyAsync(Guid id)
     {
-        var room = await _roomRepository.GetRoomByIdAsync(id);
+        var room = await _roomRepository.GetRoomByIdReadOnlyAsync(id);
 
         if (room == null) return null;
 
@@ -44,7 +44,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
 
     public async Task<RoomResponseDto?> UpdateRoomAsync(Guid id, UpdateRoomDto dto)
     {
-        var room = await _roomRepository.GetRoomByIdTrackedAsync(id);
+        var room = await _roomRepository.GetRoomByIdAsync(id);
 
         if (room == null) return null;
 

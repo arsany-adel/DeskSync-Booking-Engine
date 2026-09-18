@@ -32,7 +32,7 @@ public class RoomsController(IRoomService RoomService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoomResponseDto>> GetRoomById(Guid id)
     {
-        var room = await _roomService.GetRoomByIdAsync(id);
+        var room = await _roomService.GetRoomByIdReadOnlyAsync(id);
         
         if (room == null) return NotFound();
 
