@@ -80,12 +80,12 @@ public class ReservationRepository(AppDbContext context) : IReservationRepositor
             .ToListAsync();
     }
 
-    public async Task<Reservation?> GetTrackedReservationByIdAsync(Guid id)
+    public async Task<Reservation?> GetReservationByIdAsync(Guid id)
     {
         return await _context.Reservations.FindAsync(id);
     }
 
-    public async Task<Reservation?> GetReservationByIdAsync(Guid id)
+    public async Task<Reservation?> GetReservationReadOnlyByIdAsync(Guid id)
     {
         return await _context.Reservations.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
     }

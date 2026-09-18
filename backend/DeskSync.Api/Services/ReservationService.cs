@@ -66,7 +66,7 @@ public class ReservationService(
         AdminUpdateReservationDto dto
     )
     {
-        var reservation = await _reservationRepository.GetTrackedReservationByIdAsync(
+        var reservation = await _reservationRepository.GetReservationByIdAsync(
             reservationId
         );
 
@@ -122,7 +122,7 @@ public class ReservationService(
         Guid userId
     )
     {
-        var reservation = await _reservationRepository.GetTrackedReservationByIdAsync(
+        var reservation = await _reservationRepository.GetReservationByIdAsync(
             reservationId
         );
 
@@ -219,7 +219,7 @@ public class ReservationService(
 
     public async Task DeleteReservationAsync(Guid reservationId, Guid userId)
     {
-        var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId);
+        var reservation = await _reservationRepository.GetReservationReadOnlyByIdAsync(reservationId);
 
         if (reservation == null)
         {
@@ -243,7 +243,7 @@ public class ReservationService(
 
     public async Task AdminDeleteReservationAsync(Guid reservationId)
     {
-        var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId);
+        var reservation = await _reservationRepository.GetReservationReadOnlyByIdAsync(reservationId);
 
         if (reservation == null)
         {
@@ -265,7 +265,7 @@ public class ReservationService(
         Guid? currentUserId = null
     )
     {
-        var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId);
+        var reservation = await _reservationRepository.GetReservationReadOnlyByIdAsync(reservationId);
 
         if (reservation == null)
         {

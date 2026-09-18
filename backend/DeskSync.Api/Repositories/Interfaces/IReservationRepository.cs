@@ -19,8 +19,8 @@ public interface IReservationRepository
         Guid roomId, 
         LocalDateTime startDate, 
         LocalDateTime endDate);
-    Task<Reservation?> GetTrackedReservationByIdAsync(Guid id);
     Task<Reservation?> GetReservationByIdAsync(Guid id);
+    Task<Reservation?> GetReservationReadOnlyByIdAsync(Guid id);
 
     Reservation  AddReservation(Reservation reservation);
 
