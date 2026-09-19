@@ -5,7 +5,7 @@ using DeskSync.Api.Constants;
 
 namespace DeskSync.Api.DTOs.Reservations;
 
-public record ReservationSearchQuery
+public record ReservationSearchQueryDto
 {
     public Guid? RoomId { get; init; }
     public Guid? UserId { get; init; }

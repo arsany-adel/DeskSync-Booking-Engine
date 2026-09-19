@@ -5,6 +5,7 @@ using DeskSync.Api.Constants;
 using DeskSync.Api.DTOs.Common;
 using DeskSync.Api.DTOs.Reservations;
 using NodaTime;
+using ErrorOr;
 
 namespace DeskSync.Api.Services.Interfaces;
 
@@ -19,20 +20,20 @@ public interface IReservationService
         int itemsPerPage = PaginationConstants.DefaultPageSize
     );
 
-    Task<ReservationResponseDto> AdminUpdateReservation(
+    Task<ErrorOr<ReservationResponseDto>> AdminUpdateReservation(
         Guid reservationId,
         AdminUpdateReservationDto dto
     );
 
-    Task AdminDeleteReservationAsync(Guid reservationId);
+    Task<ErrorOr<bool>> AdminDeleteReservationAsync(Guid reservationId);
 
-    Task<ReservationResponseDto> CreateReservation(Guid userId, CreateReservationDto dto);
+    Task<ErrorOr<ReservationResponseDto>> CreateReservation(Guid userId, CreateReservationDto dto);
 
-    Task<ReservationResponseDto> UpdateReservation(Guid reservationId, UpdateReservationDto dto,Guid userId);
+    Task<ErrorOr<ReservationResponseDto>> UpdateReservation(Guid reservationId, UpdateReservationDto dto,Guid userId);
 
-    Task DeleteReservationAsync(Guid reservationId, Guid userId);
+    Task<ErrorOr<bool>> DeleteReservationAsync(Guid reservationId, Guid userId);
 
-    Task<ReservationResponseDto> GetReservationAsync(
+    Task<ErrorOr<ReservationResponseDto>> GetReservationAsync(
         Guid reservationId,
         Guid? currentUserId = null
     );

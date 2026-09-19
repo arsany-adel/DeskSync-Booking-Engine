@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using DeskSync.Api.Constants;
+using DeskSync.Api.DTOs.Common;
 using DeskSync.Api.DTOs.Reservations;
 using DeskSync.Api.Services.Interfaces;
-using DeskSync.Api.Constants;
+using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NodaTime;
-using DeskSync.Api.DTOs.Common;
 
 namespace DeskSync.Api.Controllers;
 
@@ -22,11 +25,32 @@ public class ReservationController(IReservationService reservationService) : Con
     private Guid GetCurrentUserId()
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
+
         if (!Guid.TryParse(userIdString, out Guid userId))
             throw new UnauthorizedAccessException("Invalid user token.");
-            
+
         return userId;
+    }
+
+    private ActionResult ErrorResult(List<Error> errors)
+    {
+        if (errors.Count is 0) //if for some reason the IsError was True and no error in list 
+        {
+            return Problem(); // error Code 500 Internal Server Error
+        }
+
+        var firstError = errors[0];
+
+        var statusCode = firstError.Type switch
+        {
+            ErrorType.NotFound => StatusCodes.Status404NotFound,
+            ErrorType.Validation => StatusCodes.Status400BadRequest,
+            ErrorType.Conflict => StatusCodes.Status409Conflict,
+            ErrorType.Unauthorized => StatusCodes.Status403Forbidden,
+            _ => StatusCodes.Status500InternalServerError,
+        };
+
+        return Problem(statusCode: statusCode, title: firstError.Description);
     }
 
     [HttpPost]
@@ -34,28 +58,40 @@ public class ReservationController(IReservationService reservationService) : Con
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto)
+    public async Task<ActionResult<ReservationResponseDto>> CreateReservation(
+        [FromBody] CreateReservationDto dto
+    )
     {
         var userId = GetCurrentUserId();
         var result = await _reservationService.CreateReservation(userId, dto);
-        
-        return CreatedAtAction(nameof(GetReservation), new { id = result.Id }, result);
+
+        if (result.IsError)
+            return ErrorResult(result.Errors);
+
+        return CreatedAtAction(nameof(GetReservation), new { id = result.Value.Id }, result);
     }
 
     [HttpGet("my-reservations")]
     [ProducesResponseType(typeof(PagedResult<ReservationResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMyReservations(
-        [FromQuery] LocalDateTime? startDate, 
-        [FromQuery] LocalDateTime? endDate, 
-        [FromQuery] int pageNumber = PaginationConstants.DefaultPageNumber, 
-        [FromQuery] int itemsPerPage = PaginationConstants.DefaultPageSize)
+    public async Task<ActionResult<PagedResult<ReservationResponseDto>>> GetMyReservations(
+        [FromQuery] LocalDateTime? startDate,
+        [FromQuery] LocalDateTime? endDate,
+        [FromQuery] int pageNumber = PaginationConstants.DefaultPageNumber,
+        [FromQuery] int itemsPerPage = PaginationConstants.DefaultPageSize
+    )
     {
         var userId = GetCurrentUserId();
-        
+
         var result = await _reservationService.SearchReservationAsync(
-            roomId: null, userId, startDate, endDate, pageNumber, itemsPerPage);
-            
+            roomId: null,
+            userId,
+            startDate,
+            endDate,
+            pageNumber,
+            itemsPerPage
+        );
+
         return Ok(result);
     }
 
@@ -64,11 +100,15 @@ public class ReservationController(IReservationService reservationService) : Con
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetReservation(Guid id)
+    public async Task<ActionResult<ReservationResponseDto>> GetReservation(Guid id)
     {
         var userId = User.IsInRole("Admin") ? (Guid?)null : GetCurrentUserId();
-        
+
         var result = await _reservationService.GetReservationAsync(id, userId);
+
+        if (result.IsError)
+            return ErrorResult(result.Errors);
+
         return Ok(result);
     }
 
@@ -79,11 +119,18 @@ public class ReservationController(IReservationService reservationService) : Con
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> UpdateReservation(Guid id, [FromBody] UpdateReservationDto dto)
+    public async Task<ActionResult<ReservationResponseDto>> UpdateReservation(
+        Guid id,
+        [FromBody] UpdateReservationDto dto
+    )
     {
         var userId = GetCurrentUserId();
-        
+
         var result = await _reservationService.UpdateReservation(id, dto, userId);
+
+        if (result.IsError)
+            return ErrorResult(result.Errors);
+
         return Ok(result);
     }
 
@@ -93,11 +140,14 @@ public class ReservationController(IReservationService reservationService) : Con
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> DeleteReservation(Guid id)
+    public async Task<ActionResult> DeleteReservation(Guid id)
     {
         var userId = GetCurrentUserId();
-        await _reservationService.DeleteReservationAsync(id, userId);
-        
+        var result = await _reservationService.DeleteReservationAsync(id, userId);
+
+        if (result.IsError)
+            return ErrorResult(result.Errors);
+
         return NoContent();
     }
 
@@ -105,10 +155,11 @@ public class ReservationController(IReservationService reservationService) : Con
     [HttpGet("room/{roomId:guid}/schedule")]
     [ProducesResponseType(typeof(IReadOnlyList<RoomScheduleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetRoomSchedule(
-        Guid roomId, 
-        [FromQuery] LocalDateTime startDate, 
-        [FromQuery] LocalDateTime endDate)
+    public async Task<ActionResult<IReadOnlyList<RoomScheduleDto>>> GetRoomSchedule(
+        Guid roomId,
+        [FromQuery] LocalDateTime startDate,
+        [FromQuery] LocalDateTime endDate
+    )
     {
         var schedule = await _reservationService.GetRoomScheduleAsync(roomId, startDate, endDate);
         return Ok(schedule);
@@ -119,11 +170,18 @@ public class ReservationController(IReservationService reservationService) : Con
     [ProducesResponseType(typeof(PagedResult<ReservationResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> SearchReservations(
-        [FromQuery] ReservationSearchQuery query)
+    public async Task<ActionResult<PagedResult<ReservationResponseDto>>> SearchReservations(
+        [FromQuery] ReservationSearchQueryDto query
+    )
     {
         var result = await _reservationService.SearchReservationAsync(
-            query.RoomId, query.UserId, query.StartDate, query.EndDate, query.PageNumber, query.PageSize);
+            query.RoomId,
+            query.UserId,
+            query.StartDate,
+            query.EndDate,
+            query.PageNumber,
+            query.PageSize
+        );
 
         return Ok(result);
     }
@@ -136,9 +194,16 @@ public class ReservationController(IReservationService reservationService) : Con
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> AdminUpdateReservation(Guid id, [FromBody] AdminUpdateReservationDto dto)
+    public async Task<ActionResult<ReservationResponseDto>> AdminUpdateReservation(
+        Guid id,
+        [FromBody] AdminUpdateReservationDto dto
+    )
     {
         var result = await _reservationService.AdminUpdateReservation(id, dto);
+
+        if (result.IsError)
+            return ErrorResult(result.Errors);
+
         return Ok(result);
     }
 
@@ -149,9 +214,12 @@ public class ReservationController(IReservationService reservationService) : Con
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> AdminDeleteReservation(Guid id)
+    public async Task<ActionResult> AdminDeleteReservation(Guid id)
     {
-        await _reservationService.AdminDeleteReservationAsync(id);
+        var result = await _reservationService.AdminDeleteReservationAsync(id);
+        
+        if (result.IsError) return ErrorResult(result.Errors);
+
         return NoContent();
     }
 }

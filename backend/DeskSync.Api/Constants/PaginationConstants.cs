@@ -12,9 +12,5 @@ public static class PaginationConstants
     public const int DefaultPageNumber = 1;
 }
 
-public static class WorkerConstant
-{
-    public const int DefaultBatchSize = 500;
-}
 
 

@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using DeskSync.Api.Data;
 using DeskSync.Api.Services.Interfaces;
-using DeskSync.Api.Constants;
 using NodaTime;
+using Microsoft.Extensions.Options; 
+using DeskSync.Api.Configuration;
 
 namespace DeskSync.Api.Services;
 
@@ -10,18 +11,19 @@ public class TzdbSyncService(
     AppDbContext dbContext,
     IDateTimeZoneProvider tzProvider,
     IClock clock,
-    ILogger<TzdbSyncService> logger
+    ILogger<TzdbSyncService> logger,
+    IOptions<WorkerSettingsOptions> workerOptions
 ): ITzdbSyncService
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly IDateTimeZoneProvider _tzProvider = tzProvider;
     private readonly IClock _clock = clock;
     private readonly ILogger<TzdbSyncService> _logger = logger;
+    private readonly int _batchSize = workerOptions.Value.DefaultBatchSize;
 
     public async Task SyncReservationsAsync(CancellationToken cancellationToken = default)
     {
         var currentTzVersion = _tzProvider.VersionId;
-        const int batchSize = WorkerConstant.DefaultBatchSize;
         var currentInstant = _clock.GetCurrentInstant();
         bool hasMoreRecords = true; 
 
@@ -29,7 +31,7 @@ public class TzdbSyncService(
         {
             var outdatedReservations = await _dbContext.Reservations
                 .Where(r=> r.TzdbVersion != currentTzVersion && r.UtcStartTime > currentInstant)
-                .Take(batchSize)
+                .Take(_batchSize)
                 .ToListAsync(cancellationToken);
             
             if (outdatedReservations.Count == 0)

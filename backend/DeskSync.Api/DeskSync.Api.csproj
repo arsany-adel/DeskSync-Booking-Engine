@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ErrorOr" />
     <PackageReference Include="Hangfire.AspNetCore" />
     <PackageReference Include="Hangfire.Core" />
     <PackageReference Include="Hangfire.PostgreSql" />
