@@ -18,7 +18,7 @@ namespace DeskSync.Api.Controllers;
 [Route("api/reservations")]
 [Authorize]
 [Produces("application/json")]
-public class ReservationController(IReservationService reservationService) : ControllerBase
+public class ReservationController(IReservationService reservationService) : BaseApiController
 {
     private readonly IReservationService _reservationService = reservationService;
 

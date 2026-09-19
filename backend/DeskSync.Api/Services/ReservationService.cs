@@ -16,8 +16,8 @@ public class ReservationService(
 ) : IReservationService
 {
     private readonly IReservationRepository _reservationRepository = reservationRepository;
-    private readonly IDateTimeZoneProvider _tzProvider = tzProvider; // used for CalculateUtcCaches()
-    private readonly IClock _clock = clock; // for unit testing when creating a FakeClock
+    private readonly IDateTimeZoneProvider _tzProvider = tzProvider;
+    private readonly IClock _clock = clock;
 
     private ErrorOr<(Instant UtcStart, Instant UtcEnd)> MapToUtcInstants(
         LocalDateTime localStart,
@@ -29,10 +29,7 @@ public class ReservationService(
 
         if (zone is null)
         {
-            return Error.Validation(
-                code: "Reservation.InvalidTimezone",
-                description: $"Invalid timezone ID: '{timezoneId}'."
-            );
+            return DomainErrors.Reservation.InvalidTimezone(timezoneId);
         }
 
         var utcStart = zone.AtLeniently(localStart).ToInstant();
@@ -77,18 +74,12 @@ public class ReservationService(
 
         if (reservation == null)
         {
-            return Error.NotFound(
-                code: "Reservation.NotFound",
-                description: $"Reservation with ID '{reservationId}' was not found."
-            );
+            return DomainErrors.Reservation.NotFound(reservationId);
         }
 
         if (dto.LocalEndTime <= dto.LocalStartTime)
         {
-            return Error.Validation(
-                code: "Reservation.InvalidTimeRange",
-                description: "End time must be strictly after start time."
-            );
+            return DomainErrors.Reservation.InvalidTimeRange;
         }
 
         var utcInstantsResult = MapToUtcInstants(
@@ -113,10 +104,7 @@ public class ReservationService(
 
         if (!isAvailableTime)
         {
-            return Error.Conflict(
-                code: "Reservation.RoomNotAvailable",
-                description: "The room is already booked for the selected time slot."
-            );
+            return DomainErrors.Reservation.RoomNotAvailable;
         }
 
         reservation.AdminUpdate(
@@ -145,26 +133,17 @@ public class ReservationService(
 
         if (reservation == null)
         {
-            return Error.NotFound(
-                code: "Reservation.NotFound",
-                description: $"Reservation with ID '{reservationId}' was not found."
-            );
+            return DomainErrors.Reservation.NotFound(reservationId);
         }
 
         if (reservation.UserId != userId)
         {
-            return Error.Unauthorized(
-                code: "Reservation.Unauthorized",
-                description: "You can only update your own reservations."
-            );
+            return DomainErrors.General.Unauthorized;
         }
 
         if (dto.LocalEndTime <= dto.LocalStartTime)
         {
-            return Error.Validation(
-                code: "Reservation.InvalidTimeRange",
-                description: "End time must be strictly after start time."
-            );
+            return DomainErrors.Reservation.InvalidTimeRange;
         }
 
         var utcInstantsResult = MapToUtcInstants(
@@ -189,10 +168,7 @@ public class ReservationService(
 
         if (!isAvailableTime)
         {
-            return Error.Conflict(
-                code: "Reservation.RoomNotAvailable",
-                description: "The room is already booked for the selected time slot."
-            );
+            return DomainErrors.Reservation.RoomNotAvailable;
         }
 
         reservation.UpdateDetails(
@@ -216,10 +192,7 @@ public class ReservationService(
     {
         if (dto.LocalEndTime <= dto.LocalStartTime)
         {
-            return Error.Validation(
-                code: "Reservation.InvalidTimeRange",
-                description: "End time must be strictly after start time."
-            );
+            return DomainErrors.Reservation.InvalidTimeRange;
         }
 
         var utcInstantsResult = MapToUtcInstants(
@@ -243,10 +216,7 @@ public class ReservationService(
 
         if (!isAvailableTime)
         {
-            return Error.Conflict(
-                code: "Reservation.RoomNotAvailable",
-                description: "The room is already booked for the selected time slot."
-            );
+            return DomainErrors.Reservation.RoomNotAvailable;
         }
 
         var reservation = dto.MapToEntity(
@@ -270,26 +240,17 @@ public class ReservationService(
 
         if (reservation == null)
         {
-            return Error.NotFound(
-                code: "Reservation.NotFound",
-                description: $"Reservation with ID '{reservationId}' was not found."
-            );
+            return DomainErrors.Reservation.NotFound(reservationId);
         }
 
         if (reservation.UserId != userId)
         {
-            return Error.Unauthorized(
-                code: "Reservation.Unauthorized",
-                description: "You can only delete your own reservations."
-            );
+            return DomainErrors.General.Unauthorized;
         }
 
         if (reservation.UtcStartTime <= _clock.GetCurrentInstant())
         {
-            return Error.Validation(
-                code: "Reservation.CannotDeleteStarted",
-                description: "Cannot delete a reservation that has already started. Historical records must be preserved."
-            );
+            return DomainErrors.Reservation.CannotDeleteStarted;
         }
 
         await _reservationRepository.DeleteReservationAsync(reservationId);
@@ -304,18 +265,12 @@ public class ReservationService(
 
         if (reservation == null)
         {
-            return Error.NotFound(
-                code: "Reservation.NotFound",
-                description: $"Reservation with ID '{reservationId}' was not found."
-            );
+            return DomainErrors.Reservation.NotFound(reservationId);
         }
 
         if (reservation.UtcStartTime <= _clock.GetCurrentInstant())
         {
-            return Error.Validation(
-                code: "Reservation.CannotDeleteStarted",
-                description: "Cannot delete a reservation that has already started. Historical records must be preserved."
-            );
+            return DomainErrors.Reservation.CannotDeleteStarted;
         }
 
         await _reservationRepository.DeleteReservationAsync(reservationId);
@@ -333,18 +288,12 @@ public class ReservationService(
 
         if (reservation == null)
         {
-            return Error.NotFound(
-                code: "Reservation.NotFound",
-                description: $"Reservation with ID '{reservationId}' was not found."
-            );
+            return DomainErrors.Reservation.NotFound(reservationId);
         }
 
         if (currentUserId.HasValue && reservation.UserId != currentUserId.Value)
         {
-            return Error.Unauthorized(
-                code: "Reservation.Unauthorized",
-                description: "You do not have permission to view this reservation."
-            );
+            return DomainErrors.General.Unauthorized;
         }
 
         return reservation.ToReservationResponseDto();
