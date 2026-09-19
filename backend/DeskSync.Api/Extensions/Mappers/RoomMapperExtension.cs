@@ -1,3 +1,4 @@
+using System;
 using DeskSync.Api.DTOs.Rooms;
 using DeskSync.Api.Entities;
 
@@ -5,19 +6,19 @@ namespace DeskSync.Api.Extensions.Mappers;
 
 public static class RoomMapperExtension
 {
-    public static Room MapToEntity(this RoomResponseDto roomDto)
+    public static Room MapToEntity(this CreateRoomDto dto, Guid roomId)
     {
         return new Room(
-            roomDto.Id,
-            roomDto.WorkspaceId,
-            roomDto.Name,
-            roomDto.Description,
-            roomDto.NoOfChairs,
-            roomDto.PricePerHour,
-            roomDto.Status,
-            roomDto.HasProjector,
-            roomDto.HasBoard,
-            roomDto.RecommendedUse
+            roomId,
+            dto.WorkspaceId,
+            dto.Name,
+            dto.Description,
+            dto.NoOfChairs,
+            dto.PricePerHour,
+            dto.Status,
+            dto.HasProjector,
+            dto.HasBoard,
+            dto.RecommendedUse
         );
     }
 
