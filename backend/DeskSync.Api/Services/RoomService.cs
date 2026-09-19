@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using DeskSync.Api.DTOs.Rooms;
 using DeskSync.Api.Entities;
 using DeskSync.Api.Extensions.Mappers;
@@ -14,27 +18,15 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
 
     public async Task<ErrorOr<RoomResponseDto>> CreateRoomAsync(CreateRoomDto dto)
     {
-        var responseDto = new RoomResponseDto(
-            Guid.NewGuid(),
-            dto.WorkspaceId,
-            dto.Name,
-            dto.Description,
-            dto.NoOfChairs,
-            dto.PricePerHour,
-            dto.Status,
-            dto.HasProjector,
-            dto.HasBoard,
-            dto.RecommendedUse
-        );
-
-        var room = responseDto.MapToEntity();
+        var room = dto.MapToEntity(Guid.NewGuid());
 
         _roomRepository.AddRoom(room);
         await _roomRepository.SaveChangesAsync();
 
-        return responseDto;
+        return room.MapToDto();
     }
 
+    // Removed the ? from RoomResponseDto
     public async Task<ErrorOr<RoomResponseDto?>> GetRoomByIdReadOnlyAsync(Guid id)
     {
         var room = await _roomRepository.GetRoomByIdReadOnlyAsync(id);
@@ -75,7 +67,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
     public async Task<ErrorOr<bool>> DeleteRoomAsync(Guid id)
     {
         var deleted = await _roomRepository.DeleteRoomAsync(id);
-        
+
         if (!deleted) 
         {
             return DomainErrors.Room.NotFound(id);
