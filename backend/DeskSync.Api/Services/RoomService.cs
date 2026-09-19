@@ -26,7 +26,6 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
         return room.MapToDto();
     }
 
-    // Removed the ? from RoomResponseDto
     public async Task<ErrorOr<RoomResponseDto?>> GetRoomByIdReadOnlyAsync(Guid id)
     {
         var room = await _roomRepository.GetRoomByIdReadOnlyAsync(id);

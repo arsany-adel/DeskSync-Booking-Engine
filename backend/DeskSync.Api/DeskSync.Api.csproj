@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="ErrorOr" />
+    <PackageReference Include="Hangfire" />
+    <PackageReference Include="Hangfire.PostgreSql" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
     <PackageReference Include="NodaTime" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />

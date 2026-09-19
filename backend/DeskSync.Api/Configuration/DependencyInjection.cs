@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
 
         services.AddScoped<IReservationService, ReservationService>();
+        services.AddScoped<IRoomService, RoomService>();
 
         services.AddSingleton<IClock>(SystemClock.Instance);
         services.AddSingleton<IDateTimeZoneProvider>(DateTimeZoneProviders.Tzdb);
@@ -41,6 +42,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IReservationRepository, ReservationRepository>();
+        services.AddScoped<IRoomRepository, RoomRepository>();
 
         services.Configure<WorkerSettingsOptions>(
             configuration.GetSection(WorkerSettingsOptions.SectionName)
