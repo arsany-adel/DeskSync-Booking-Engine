@@ -2,86 +2,80 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using DeskSync.Api.DTOs.Rooms;
 using DeskSync.Api.Services.Interfaces;
+
 namespace DeskSync.Api.Controllers;
 
-[ApiController]
 [Route("/api/rooms")]
-public class RoomsController(IRoomService RoomService) : ControllerBase
+public class RoomsController(IRoomService roomService) : BaseApiController
 {
-    private readonly IRoomService _roomService = RoomService;
+    private readonly IRoomService _roomService = roomService;
 
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(RoomResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RoomResponseDto>> CreateRoom([FromBody] CreateRoomDto dto)
     {
-        try
-        {
-            var room = await _roomService.CreateRoomAsync(dto);
-            return CreatedAtAction(nameof(GetRoomById), new { id = room.Id }, room);
-        }
-        catch (ArgumentException ex) 
-        {
-            return BadRequest(new { ErrorCode = "INVALID_ROOM_DATA", Details = ex.Message });
-        }
+        var result = await _roomService.CreateRoomAsync(dto);
+        
+        if (result.IsError) return ErrorResult(result.Errors);
+
+        return CreatedAtAction(nameof(GetRoomById), new { id = result.Value.Id }, result.Value);
     }
 
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(RoomResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoomResponseDto>> GetRoomById(Guid id)
     {
-        var room = await _roomService.GetRoomByIdReadOnlyAsync(id);
+        var result = await _roomService.GetRoomByIdReadOnlyAsync(id);
         
-        if (room == null) return NotFound();
+        if (result.IsError) return ErrorResult(result.Errors);
 
-        return room;
+        return Ok(result.Value);
     }
 
-
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(RoomResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RoomResponseDto>> UpdateRoom(Guid id, [FromBody] UpdateRoomDto dto)
     {
-        try
-        {
-            var updatedRoom = await _roomService.UpdateRoomAsync(id, dto);
-            
-            if (updatedRoom == null) return NotFound();
+        var result = await _roomService.UpdateRoomAsync(id, dto);
+        
+        if (result.IsError) return ErrorResult(result.Errors);
 
-            return updatedRoom;
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { ErrorCode = "INVALID_ROOM_DATA", Details = ex.Message });
-        }
+        return Ok(result.Value);
     }
 
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> DeleteRoom(Guid id)
     {
-        var deleted = await _roomService.DeleteRoomAsync(id);
+        var result = await _roomService.DeleteRoomAsync(id);
         
-        if (!deleted) return NotFound();
+        if (result.IsError) return ErrorResult(result.Errors);
 
         return NoContent();
     }
 
-    
     [HttpGet("workspace/{workspaceId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<RoomResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IReadOnlyList<RoomResponseDto>>> GetRoomsByWorkspaceId(Guid workspaceId)
     {
         var rooms = await _roomService.GetRoomsByWorkspaceIdAsync(workspaceId);
-        
         return Ok(rooms); 
     }
 }

@@ -3,6 +3,8 @@ using DeskSync.Api.Entities;
 using DeskSync.Api.Extensions.Mappers;
 using DeskSync.Api.Repositories.Interfaces;
 using DeskSync.Api.Services.Interfaces;
+using DeskSync.Api.Constants;
+using ErrorOr;
 
 namespace DeskSync.Api.Services;
 
@@ -10,7 +12,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
 {
     private readonly IRoomRepository _roomRepository = roomRepository;
 
-    public async Task<RoomResponseDto> CreateRoomAsync(CreateRoomDto dto)
+    public async Task<ErrorOr<RoomResponseDto>> CreateRoomAsync(CreateRoomDto dto)
     {
         var responseDto = new RoomResponseDto(
             Guid.NewGuid(),
@@ -33,20 +35,26 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
         return responseDto;
     }
 
-    public async Task<RoomResponseDto?> GetRoomByIdReadOnlyAsync(Guid id)
+    public async Task<ErrorOr<RoomResponseDto>> GetRoomByIdReadOnlyAsync(Guid id)
     {
         var room = await _roomRepository.GetRoomByIdReadOnlyAsync(id);
 
-        if (room == null) return null;
+        if (room == null) 
+        {
+            return DomainErrors.Room.NotFound(id);
+        }
 
         return room.MapToDto();
     }
 
-    public async Task<RoomResponseDto?> UpdateRoomAsync(Guid id, UpdateRoomDto dto)
+    public async Task<ErrorOr<RoomResponseDto>> UpdateRoomAsync(Guid id, UpdateRoomDto dto)
     {
         var room = await _roomRepository.GetRoomByIdAsync(id);
 
-        if (room == null) return null;
+        if (room == null) 
+        {
+            return DomainErrors.Room.NotFound(id);
+        }
 
         room.UpdateRoom(
             dto.Name,
@@ -64,9 +72,16 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
         return room.MapToDto();
     }
 
-    public async Task<bool> DeleteRoomAsync(Guid id)
+    public async Task<ErrorOr<bool>> DeleteRoomAsync(Guid id)
     {
-        return await _roomRepository.DeleteRoomAsync(id);
+        var deleted = await _roomRepository.DeleteRoomAsync(id);
+        
+        if (!deleted) 
+        {
+            return DomainErrors.Room.NotFound(id);
+        }
+
+        return true;
     }
 
     public async Task<IReadOnlyList<RoomResponseDto>> GetRoomsByWorkspaceIdAsync(Guid workspaceId)
@@ -78,6 +93,4 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
             .ToList()
             .AsReadOnly();
     }
-
-
 }
