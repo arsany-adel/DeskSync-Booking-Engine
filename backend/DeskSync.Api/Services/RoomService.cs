@@ -35,7 +35,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
         return responseDto;
     }
 
-    public async Task<ErrorOr<RoomResponseDto>> GetRoomByIdReadOnlyAsync(Guid id)
+    public async Task<ErrorOr<RoomResponseDto?>> GetRoomByIdReadOnlyAsync(Guid id)
     {
         var room = await _roomRepository.GetRoomByIdReadOnlyAsync(id);
 
@@ -47,7 +47,7 @@ public class RoomService(IRoomRepository roomRepository) : IRoomService
         return room.MapToDto();
     }
 
-    public async Task<ErrorOr<RoomResponseDto>> UpdateRoomAsync(Guid id, UpdateRoomDto dto)
+    public async Task<ErrorOr<RoomResponseDto?>> UpdateRoomAsync(Guid id, UpdateRoomDto dto)
     {
         var room = await _roomRepository.GetRoomByIdAsync(id);
 
