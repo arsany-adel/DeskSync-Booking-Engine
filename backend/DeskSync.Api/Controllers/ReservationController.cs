@@ -6,18 +6,15 @@ using DeskSync.Api.Constants;
 using DeskSync.Api.DTOs.Common;
 using DeskSync.Api.DTOs.Reservations;
 using DeskSync.Api.Services.Interfaces;
-using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NodaTime;
 
 namespace DeskSync.Api.Controllers;
 
-[ApiController]
+
 [Route("api/reservations")]
 [Authorize]
-[Produces("application/json")]
 public class ReservationController(IReservationService reservationService) : BaseApiController
 {
     private readonly IReservationService _reservationService = reservationService;
@@ -30,27 +27,6 @@ public class ReservationController(IReservationService reservationService) : Bas
             throw new UnauthorizedAccessException("Invalid user token.");
 
         return userId;
-    }
-
-    private ActionResult ErrorResult(List<Error> errors)
-    {
-        if (errors.Count is 0) //if for some reason the IsError was True and no error in list 
-        {
-            return Problem(); // error Code 500 Internal Server Error
-        }
-
-        var firstError = errors[0];
-
-        var statusCode = firstError.Type switch
-        {
-            ErrorType.NotFound => StatusCodes.Status404NotFound,
-            ErrorType.Validation => StatusCodes.Status400BadRequest,
-            ErrorType.Conflict => StatusCodes.Status409Conflict,
-            ErrorType.Unauthorized => StatusCodes.Status403Forbidden,
-            _ => StatusCodes.Status500InternalServerError,
-        };
-
-        return Problem(statusCode: statusCode, title: firstError.Description);
     }
 
     [HttpPost]

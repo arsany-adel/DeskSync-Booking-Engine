@@ -20,11 +20,6 @@ public static class DomainErrors
                 code: "Room.NotFound",
                 description: $"Room with ID '{id}' was not found."
             );
-
-        public static readonly Error Deactivated = Error.Validation(
-            code: "Room.Deactivated",
-            description: "This room is currently deactivated and cannot be booked."
-        );
     }
 
     public static class Reservation
