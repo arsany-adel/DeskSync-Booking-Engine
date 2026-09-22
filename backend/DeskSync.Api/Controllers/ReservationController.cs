@@ -44,17 +44,14 @@ public class ReservationController(IReservationService reservationService) : Bas
         if (result.IsError)
             return ErrorResult(result.Errors);
 
-        return CreatedAtAction(nameof(GetReservation), new { id = result.Value.Id }, result);
+        return CreatedAtAction(nameof(GetReservation), new { id = result.Value.Id }, result.Value);
     }
 
     [HttpGet("my-reservations")]
     [ProducesResponseType(typeof(PagedResult<ReservationResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResult<ReservationResponseDto>>> GetMyReservations(
-        [FromQuery] LocalDateTime? startDate,
-        [FromQuery] LocalDateTime? endDate,
-        [FromQuery] int pageNumber = PaginationConstants.DefaultPageNumber,
-        [FromQuery] int itemsPerPage = PaginationConstants.DefaultPageSize
+        [FromQuery] ReservationSearchQueryDto query
     )
     {
         var userId = GetCurrentUserId();
@@ -62,10 +59,10 @@ public class ReservationController(IReservationService reservationService) : Bas
         var result = await _reservationService.SearchReservationAsync(
             roomId: null,
             userId,
-            startDate,
-            endDate,
-            pageNumber,
-            itemsPerPage
+            query.StartDate,
+            query.EndDate,
+            query.PageNumber,
+            query.PageSize
         );
 
         return Ok(result);
@@ -85,7 +82,7 @@ public class ReservationController(IReservationService reservationService) : Bas
         if (result.IsError)
             return ErrorResult(result.Errors);
 
-        return Ok(result);
+        return Ok(result.Value);
     }
 
     [HttpPut("{id:guid}")]
@@ -107,7 +104,7 @@ public class ReservationController(IReservationService reservationService) : Bas
         if (result.IsError)
             return ErrorResult(result.Errors);
 
-        return Ok(result);
+        return Ok(result.Value);
     }
 
     [HttpDelete("{id:guid}")]
@@ -180,7 +177,7 @@ public class ReservationController(IReservationService reservationService) : Bas
         if (result.IsError)
             return ErrorResult(result.Errors);
 
-        return Ok(result);
+        return Ok(result.Value);
     }
 
     [Authorize(Roles = "Admin")]

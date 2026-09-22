@@ -4,6 +4,7 @@ using DeskSync.Api.DTOs.Reservations;
 using DeskSync.Api.Extensions.Mappers;
 using DeskSync.Api.Repositories.Interfaces;
 using DeskSync.Api.Services.Interfaces;
+using DeskSync.Api.Entities;
 using ErrorOr;
 using NodaTime;
 
@@ -239,22 +240,12 @@ public class ReservationService(
         );
 
         if (reservation == null)
-        {
             return DomainErrors.Reservation.NotFound(reservationId);
-        }
 
         if (reservation.UserId != userId)
-        {
             return DomainErrors.General.Unauthorized;
-        }
 
-        if (reservation.UtcStartTime <= _clock.GetCurrentInstant())
-        {
-            return DomainErrors.Reservation.CannotDeleteStarted;
-        }
-
-        await _reservationRepository.DeleteReservationAsync(reservationId);
-        return true;
+        return await ExecuteDeleteAsync(reservation);
     }
 
     public async Task<ErrorOr<bool>> AdminDeleteReservationAsync(Guid reservationId)
@@ -264,16 +255,17 @@ public class ReservationService(
         );
 
         if (reservation == null)
-        {
             return DomainErrors.Reservation.NotFound(reservationId);
-        }
 
+        return await ExecuteDeleteAsync(reservation);
+    }
+
+    private async Task<ErrorOr<bool>> ExecuteDeleteAsync(Reservation reservation)
+    {
         if (reservation.UtcStartTime <= _clock.GetCurrentInstant())
-        {
             return DomainErrors.Reservation.CannotDeleteStarted;
-        }
 
-        await _reservationRepository.DeleteReservationAsync(reservationId);
+        await _reservationRepository.DeleteReservationAsync(reservation.Id);
         return true;
     }
 
