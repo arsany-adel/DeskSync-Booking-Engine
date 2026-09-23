@@ -3,12 +3,20 @@ using DeskSync.Api.Services.Interfaces;
 using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 
-builder.Services.AddPresentationServices();
+builder.Services.AddAppDbContext(connectionString);
+builder.Services.AddRepositories();
+
 builder.Services.AddApplicationServices();
-builder.Services.AddInfrastructureServices(builder.Configuration);
 
+builder.Services.AddConfigurationSettings(builder.Configuration);
+builder.Services.AddBackgroundJobs(connectionString);
+
+builder.Services.AddApiControllers();
+builder.Services.AddSwaggerDocumentation();
 
 builder.Services.AddAuthentication(defaultScheme: "Bearer")
     .AddBearerToken("Bearer"); 
