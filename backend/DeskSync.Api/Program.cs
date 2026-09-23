@@ -1,49 +1,48 @@
-using DeskSync.Api.Data;
-using DeskSync.Api.Entities;
-using DeskSync.Api.Repositories;
-using DeskSync.Api.Repositories.Interfaces;
-using DeskSync.Api.Services;
+using DeskSync.Api.Configuration;
 using DeskSync.Api.Services.Interfaces;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
+using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    options.UseNpgsql(connectionString, npgsqlOptions =>
-    {
-        npgsqlOptions.UseNodaTime(); 
-    });
-});
+builder.Services.AddAppDbContext(connectionString);
+builder.Services.AddRepositories();
 
-builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddApplicationServices();
 
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddConfigurationSettings(builder.Configuration);
+builder.Services.AddBackgroundJobs(connectionString);
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-builder.Services.AddScoped<IRoomRepository, RoomRepository>();
-
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());// Converts enums to strings in Swagger and JSON responses
-    });
+builder.Services.AddApiControllers();
+builder.Services.AddSwaggerDocumentation();
 
 builder.Services.AddAuthentication(defaultScheme: "Bearer")
-    .AddBearerToken("Bearer");
-
+    .AddBearerToken("Bearer"); 
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+app.UseExceptionHandler(); // Required for your ErrorOr mapping
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Don't forget Hangfire Dashboard you must secure it with authentication and authorization in production
+
+
+RecurringJob.AddOrUpdate<ITzdbSyncService>(
+    "tzdb-daily-sync",
+    service => service.SyncReservationsAsync(CancellationToken.None),
+    Cron.Daily(2));
 
 app.Run();

@@ -11,9 +11,9 @@ public abstract class BaseApiController : ControllerBase
 {
     protected ActionResult ErrorResult(List<Error> errors)
     {
-        if (errors.Count is 0)
+        if (errors.Count is 0) //if for some reason the IsError was True and no error in list 
         {
-            return Problem();
+            return Problem();// error Code 500 Internal Server Error
         }
 
         var firstError = errors[0];
