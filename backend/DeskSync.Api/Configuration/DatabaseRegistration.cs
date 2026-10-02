@@ -22,6 +22,7 @@ public static class DatabaseRegistration
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IReservationRepository, ReservationRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
 
         return services;
     }

@@ -1,17 +1,13 @@
 using DeskSync.Api.Configuration;
-using DeskSync.Api.Services.Interfaces;
 using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddAppDbContext(connectionString);
 builder.Services.AddRepositories();
-
 builder.Services.AddApplicationServices();
-
 builder.Services.AddConfigurationSettings(builder.Configuration);
 builder.Services.AddBackgroundJobs(connectionString);
 
@@ -24,12 +20,13 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-app.UseExceptionHandler(); // Required for your ErrorOr mapping
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHangfireDashboard("/hangfire");
 }
 
 app.UseAuthentication();
@@ -37,12 +34,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Don't forget Hangfire Dashboard you must secure it with authentication and authorization in production
-
-
-RecurringJob.AddOrUpdate<ITzdbSyncService>(
-    "tzdb-daily-sync",
-    service => service.SyncReservationsAsync(CancellationToken.None),
-    Cron.Daily(2));
+// ✅ All recurring jobs mapped cleanly via extension method
+app.MapRecurringJobs();
 
 app.Run();
