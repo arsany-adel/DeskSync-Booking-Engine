@@ -51,4 +51,25 @@ public static class DomainErrors
             description: "Cannot delete a reservation that has already started. Historical records must be preserved."
         );
     }
+
+    public static class Notification
+    {
+        public static readonly Error NotFound = Error.NotFound(
+            code: "Notification.NotFound",
+            description: "Notification not found."
+        );
+
+        public static readonly Error Unauthorized = Error.Unauthorized(
+            code: "Notification.Unauthorized",
+            description: "You do not have permission to modify this notification."
+        );
+    }
+
+    public static class Email
+    {
+        public static readonly Error SendFailed = Error.Failure(
+            code: "Email.SendFailed",
+            description: "Failed to send email. Please try again later."
+        );
+    }
 }

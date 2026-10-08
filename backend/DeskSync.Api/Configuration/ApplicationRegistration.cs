@@ -16,6 +16,10 @@ public static class ApplicationRegistration
         services.AddScoped<IReservationService, ReservationService>();
         services.AddScoped<IRoomService, RoomService>();
 
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationWorkerService, NotificationWorkerService>();
+
         services.AddSingleton<IClock>(SystemClock.Instance);
         services.AddSingleton<IDateTimeZoneProvider>(DateTimeZoneProviders.Tzdb);
 

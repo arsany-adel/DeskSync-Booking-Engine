@@ -16,12 +16,13 @@ public class BookmarkConfiguration : IEntityTypeConfiguration<Bookmark>
         builder.Property(b => b.UserId)
                .IsRequired();
 
-        builder.HasOne<User>()
+        // Bind explicitly to navigation properties
+        builder.HasOne(b => b.User)
                .WithMany()
                .HasForeignKey(b => b.UserId)
                .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<Room>()
+        builder.HasOne(b => b.Room)
                .WithMany()
                .HasForeignKey(b => b.RoomId)
                .OnDelete(DeleteBehavior.Cascade);
