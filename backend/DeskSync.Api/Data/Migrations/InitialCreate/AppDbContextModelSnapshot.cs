@@ -55,6 +55,9 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<Guid?>("ReservationId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -70,7 +73,11 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "CreatedAt");
+                    b.HasIndex("ReservationId", "Type")
+                        .IsUnique()
+                        .HasFilter("\"ReservationId\" IS NOT NULL");
+
+                    b.HasIndex("UserId", "IsRead", "CreatedAt");
 
                     b.ToTable("Notifications");
                 });

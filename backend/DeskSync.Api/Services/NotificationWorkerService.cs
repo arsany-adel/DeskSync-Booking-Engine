@@ -1,139 +1,129 @@
 using DeskSync.Api.Data;
 using DeskSync.Api.Entities;
 using DeskSync.Api.Services.Interfaces;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NodaTime;
-using ErrorOr;
 
 namespace DeskSync.Api.Services;
 
 public class NotificationWorkerService(
     AppDbContext context,
-    IEmailService emailService,
+    IBackgroundJobClient backgroundJobClient,
     IClock clock,
     ILogger<NotificationWorkerService> logger) : INotificationWorkerService
 {
     private readonly AppDbContext _context = context;
-    private readonly IEmailService _emailService = emailService;
+    private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient;
     private readonly IClock _clock = clock;
     private readonly ILogger<NotificationWorkerService> _logger = logger;
 
+    // Critical #1: window must be at least as wide as the cron interval.
+    // Cron runs every 5 min; window = 15 min covers it plus a 3x safety margin.
+    private const int ReminderWindowMinutes = 15;
+
+    // Important: batch limit to bound memory per run.
+    private const int BatchSize = 500;
+
     public async Task ProcessReservationRemindersAsync(CancellationToken cancellationToken)
     {
-        var now = _clock.GetCurrentInstant();
-        
-        var reminderWindowStart = now.Plus(Duration.FromMinutes(14));
-        var reminderWindowEnd = now.Plus(Duration.FromMinutes(16));
-        var oneHourAgo = now.Minus(Duration.FromHours(1)); // Pre-computed for SQL parameterization
-
-        var upcomingReservations = await _context.Reservations
-            .Include(r => r.User)
-            .Include(r => r.Room)
-            .Where(r => r.UtcStartTime >= reminderWindowStart && r.UtcStartTime <= reminderWindowEnd)
-            .Where(r => !_context.Notifications.Any(n => 
-                n.UserId == r.UserId && 
-                n.Type == NotificationType.ReservationReminder && 
-                n.CreatedAt >= oneHourAgo))
-            .ToListAsync(cancellationToken);
-
-        if (!upcomingReservations.Any())
-            return;
-
-        _logger.LogInformation("Processing {Count} reservation reminders.", upcomingReservations.Count);
-
-        foreach (var reservation in upcomingReservations)
+        while (true)
         {
-            var title = "Upcoming Reservation Reminder";
-            var message = $"Your reservation for room '{reservation.Room.Name}' starts in 15 minutes.";
+            var processed = await ProcessReminderBatchAsync(cancellationToken);
 
-            var notification = new Notification
-            {
-                Id = Guid.NewGuid(),
-                UserId = reservation.UserId,
-                Title = title,
-                Message = message,
-                Type = NotificationType.ReservationReminder,
-                IsRead = false,
-                CreatedAt = now
-            };
-
-            _context.Notifications.Add(notification);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            if (reservation.User.EmailNotificationEnabled && !string.IsNullOrWhiteSpace(reservation.User.Email))
-            {
-                var emailResult = await _emailService.SendEmailAsync(
-                    reservation.User.Email,
-                    title,
-                    message,
-                    cancellationToken
-                );
-
-                if (emailResult.IsError)
-                {
-                    _logger.LogError("Failed to send reminder email to {Email}. Errors: {Errors}", 
-                        reservation.User.Email, 
-                        string.Join(", ", emailResult.Errors.Select(e => e.Description)));
-                }
-            }
+            if (processed == 0)
+                return;
         }
     }
 
-    public async Task ProcessBookmarkUpdatesAsync(CancellationToken cancellationToken)
+    private async Task<int> ProcessReminderBatchAsync(CancellationToken cancellationToken)
     {
         var now = _clock.GetCurrentInstant();
-        var oneDayAgo = now.Minus(Duration.FromDays(1)); // Avoid repeating daily bookmark alerts
+        var windowEnd = now.Plus(Duration.FromMinutes(ReminderWindowMinutes));
 
-        var bookmarkedRooms = await _context.Bookmarks
-            .Include(b => b.User)
-            .Include(b => b.Room)
-            .Where(b => !_context.Notifications.Any(n =>
-                n.UserId == b.UserId &&
-                n.Type == NotificationType.BookmarkUpdate &&
-                n.CreatedAt >= oneDayAgo))
+        // Important: no full entities, just the fields needed. AsNoTracking for read-only.
+        var dueReservations = await _context.Reservations
+            .AsNoTracking()
+            .Where(r => r.UtcStartTime > now && r.UtcStartTime <= windowEnd)
+            .Where(r => !_context.Notifications.Any(n =>
+                n.ReservationId == r.Id &&
+                n.Type == NotificationType.ReservationReminder))
+            .OrderBy(r => r.UtcStartTime)
+            .Select(r => new
+            {
+                ReservationId = r.Id,
+                r.UserId,
+                RoomName = r.Room.Name,
+                r.UtcStartTime,
+                Email = r.User.Email,
+                r.User.EmailNotificationEnabled,
+            })
+            .Take(BatchSize)
             .ToListAsync(cancellationToken);
 
-        if (!bookmarkedRooms.Any())
-            return;
+        if (dueReservations.Count == 0)
+            return 0;
 
-        _logger.LogInformation("Processing {Count} bookmark update notifications.", bookmarkedRooms.Count);
+        _logger.LogInformation(
+            "Processing batch of {Count} reservation reminders (window: {Start} → {End}).",
+            dueReservations.Count, now, windowEnd);
 
-        foreach (var bookmark in bookmarkedRooms)
+        var notifications = new List<Notification>(dueReservations.Count);
+
+        foreach (var r in dueReservations)
         {
-            var title = "Bookmarked Room Status Update";
-            var message = $"Room '{bookmark.Room.Name}' that you bookmarked is available for reservations.";
+            // Critical #7 + Important: compute remaining minutes instead of hardcoding 15.
+            var minutes = Math.Max(
+                1,
+                (int)Math.Ceiling((r.UtcStartTime - now).TotalMinutes));
 
-            var notification = new Notification
+            var title = "Upcoming Reservation Reminder";
+            var message =
+                $"Your reservation for room '{r.RoomName}' starts in about {minutes} minutes.";
+
+            notifications.Add(new Notification
             {
                 Id = Guid.NewGuid(),
-                UserId = bookmark.UserId,
+                UserId = r.UserId,
+                ReservationId = r.ReservationId, // Critical #2: dedup key
                 Title = title,
-                Message = message,
-                Type = NotificationType.BookmarkUpdate,
+                Message = message,               // stored as plain text
+                Type = NotificationType.ReservationReminder,
                 IsRead = false,
-                CreatedAt = now
-            };
-
-            _context.Notifications.Add(notification);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            if (bookmark.User.EmailNotificationEnabled && !string.IsNullOrWhiteSpace(bookmark.User.Email))
-            {
-                var emailResult = await _emailService.SendEmailAsync(
-                    bookmark.User.Email,
-                    title,
-                    message,
-                    cancellationToken
-                );
-
-                if (emailResult.IsError)
-                {
-                    _logger.LogError("Failed to send bookmark email to {Email}. Errors: {Errors}",
-                        bookmark.User.Email,
-                        string.Join(", ", emailResult.Errors.Select(e => e.Description)));
-                }
-            }
+                CreatedAt = now,
+            });
         }
+
+        // Critical #5: save once per batch, catch unique-index violations.
+        try
+        {
+            await _context.Notifications.AddRangeAsync(notifications, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            // A concurrent run inserted the same (ReservationId, Type) — unique index tripped.
+            // Clear the tracker so subsequent SaveChanges calls aren't poisoned.
+            _logger.LogWarning(
+                ex,
+                "Batch insert hit a unique-index conflict. Clearing tracker and continuing.");
+
+            _context.ChangeTracker.Clear();
+
+            // The whole batch failed; break out and let the next cron run pick up whatever's left.
+            return 0;
+        }
+
+        // Critical #4: enqueue one email job per notification, carrying only the id.
+        foreach (var notification in notifications)
+        {
+            _backgroundJobClient.Enqueue<IEmailService>(
+                service => service.SendNotificationEmailAsync(
+                    notification.Id,
+                    CancellationToken.None));
+        }
+
+        return notifications.Count;
     }
 }

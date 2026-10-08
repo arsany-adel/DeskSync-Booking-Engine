@@ -1,12 +1,20 @@
 using DeskSync.Api.DTOs;
+using DeskSync.Api.DTOs.Common;
 using ErrorOr;
 
 namespace DeskSync.Api.Services.Interfaces;
 
-// INotificationService.cs
 public interface INotificationService
 {
-    Task<ErrorOr<IReadOnlyList<NotificationResponseDto>>> GetAllUserNotificationsAsync(Guid userId);
-    Task<ErrorOr<IReadOnlyList<NotificationResponseDto>>> GetUnreadUserNotificationsAsync(Guid userId);
+    Task<ErrorOr<PagedResult<NotificationResponseDto>>> GetAllUserNotificationsAsync(
+        Guid userId,
+        int pageNumber,
+        int itemsPerPage);
+
+    Task<ErrorOr<PagedResult<NotificationResponseDto>>> GetUnreadUserNotificationsAsync(
+        Guid userId,
+        int pageNumber,
+        int itemsPerPage);
+
     Task<ErrorOr<Success>> MarkAsReadAsync(Guid notificationId, Guid userId);
 }

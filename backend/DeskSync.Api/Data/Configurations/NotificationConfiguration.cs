@@ -27,7 +27,10 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
             .HasForeignKey(n => n.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Index to optimize listing user notifications ordered by date
-        builder.HasIndex(n => new { n.UserId, n.CreatedAt });
+        builder.HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAt });
+
+        builder.HasIndex(n => new { n.ReservationId, n.Type })
+            .IsUnique()
+            .HasFilter("\"ReservationId\" IS NOT NULL");
     }
 }

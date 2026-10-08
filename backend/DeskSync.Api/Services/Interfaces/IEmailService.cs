@@ -4,5 +4,7 @@ namespace DeskSync.Api.Services.Interfaces;
 
 public interface IEmailService
 {
-    Task<ErrorOr<Success>> SendEmailAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default);
+    Task<ErrorOr<Success>> SendNotificationEmailAsync(
+        Guid notificationId,
+        CancellationToken cancellationToken = default);
 }

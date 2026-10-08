@@ -1,4 +1,5 @@
 using DeskSync.Api.Data;
+using DeskSync.Api.DTOs.Common;
 using DeskSync.Api.Entities;
 using DeskSync.Api.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -9,26 +10,58 @@ public class NotificationRepository(AppDbContext context) : INotificationReposit
 {
     private readonly AppDbContext _context = context;
 
-    public async Task<IReadOnlyList<Notification>> GetAllUserNotificationsAsync(
-        Guid userId, 
+    public async Task<PagedResult<Notification>> GetAllUserNotificationsAsync(
+        Guid userId,
+        int pageNumber,
+        int itemsPerPage,
         CancellationToken cancellationToken = default)
     {
-        return await _context.Notifications
+        var query = _context.Notifications
             .AsNoTracking()
-            .Where(n => n.UserId == userId)
+            .Where(n => n.UserId == userId);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
             .OrderByDescending(n => n.CreatedAt)
+            .Skip((pageNumber - 1) * itemsPerPage)
+            .Take(itemsPerPage)
             .ToListAsync(cancellationToken);
+
+        return new PagedResult<Notification>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            ItemsPerPage = itemsPerPage,
+        };
     }
 
-    public async Task<IReadOnlyList<Notification>> GetUnreadUserNotificationsAsync(
-        Guid userId, 
+    public async Task<PagedResult<Notification>> GetUnreadUserNotificationsAsync(
+        Guid userId,
+        int pageNumber,
+        int itemsPerPage,
         CancellationToken cancellationToken = default)
     {
-        return await _context.Notifications
+        var query = _context.Notifications
             .AsNoTracking()
-            .Where(n => n.UserId == userId && !n.IsRead)
+            .Where(n => n.UserId == userId && !n.IsRead);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
             .OrderByDescending(n => n.CreatedAt)
+            .Skip((pageNumber - 1) * itemsPerPage)
+            .Take(itemsPerPage)
             .ToListAsync(cancellationToken);
+
+        return new PagedResult<Notification>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            ItemsPerPage = itemsPerPage,
+        };
     }
 
     public async Task<Notification?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -40,6 +73,13 @@ public class NotificationRepository(AppDbContext context) : INotificationReposit
     public async Task AddAsync(Notification notification, CancellationToken cancellationToken = default)
     {
         await _context.Notifications.AddAsync(notification, cancellationToken);
+    }
+
+    public async Task AddRangeAsync(
+        IEnumerable<Notification> notifications,
+        CancellationToken cancellationToken = default)
+    {
+        await _context.Notifications.AddRangeAsync(notifications, cancellationToken);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
