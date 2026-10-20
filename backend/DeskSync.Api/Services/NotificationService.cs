@@ -13,32 +13,35 @@ public class NotificationService(INotificationRepository notificationRepository)
     private readonly INotificationRepository _notificationRepository = notificationRepository;
 
     public async Task<ErrorOr<PagedResult<NotificationResponseDto>>> GetAllUserNotificationsAsync(
-        Guid userId,
-        int pageNumber,
-        int itemsPerPage)
+        Guid userId, 
+        int pageNumber, 
+        int itemsPerPage, 
+        CancellationToken cancellationToken = default)
     {
         var result = await _notificationRepository.GetAllUserNotificationsAsync(
-            userId, pageNumber, itemsPerPage);
-
+            userId, pageNumber, itemsPerPage, cancellationToken);
+            
         return result.MapToPagedDto();
     }
 
     public async Task<ErrorOr<PagedResult<NotificationResponseDto>>> GetUnreadUserNotificationsAsync(
-        Guid userId,
-        int pageNumber,
-        int itemsPerPage)
+        Guid userId, 
+        int pageNumber, 
+        int itemsPerPage, 
+        CancellationToken cancellationToken = default)
     {
         var result = await _notificationRepository.GetUnreadUserNotificationsAsync(
-            userId, pageNumber, itemsPerPage);
-
+            userId, pageNumber, itemsPerPage, cancellationToken);
+            
         return result.MapToPagedDto();
     }
 
     public async Task<ErrorOr<Success>> MarkAsReadAsync(
         Guid notificationId,
-        Guid userId)
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
-        var notification = await _notificationRepository.GetByIdAsync(notificationId);
+        var notification = await _notificationRepository.GetByIdAsync(notificationId, cancellationToken);
 
         if (notification == null)
         {
@@ -53,8 +56,7 @@ public class NotificationService(INotificationRepository notificationRepository)
         if (!notification.IsRead)
         {
             notification.IsRead = true;
-
-            await _notificationRepository.SaveChangesAsync();
+            await _notificationRepository.SaveChangesAsync(cancellationToken);
         }
 
         return Result.Success;
