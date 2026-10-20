@@ -23,4 +23,5 @@ public class Notification
     public bool IsRead { get; set; }
 
     public Instant CreatedAt { get; set; }
+    public Instant? EmailSentAt { get; set; }
 }

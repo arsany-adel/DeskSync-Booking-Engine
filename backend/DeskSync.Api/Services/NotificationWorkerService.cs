@@ -1,9 +1,11 @@
+using DeskSync.Api.Configuration;
 using DeskSync.Api.Data;
 using DeskSync.Api.Entities;
 using DeskSync.Api.Services.Interfaces;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NodaTime;
 
 namespace DeskSync.Api.Services;
@@ -12,43 +14,42 @@ public class NotificationWorkerService(
     AppDbContext context,
     IBackgroundJobClient backgroundJobClient,
     IClock clock,
+    IOptions<WorkerSettingsOptions> workerOptions,
     ILogger<NotificationWorkerService> logger) : INotificationWorkerService
 {
     private readonly AppDbContext _context = context;
     private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient;
     private readonly IClock _clock = clock;
     private readonly ILogger<NotificationWorkerService> _logger = logger;
-
-    // Critical #1: window must be at least as wide as the cron interval.
-    // Cron runs every 5 min; window = 15 min covers it plus a 3x safety margin.
-    private const int ReminderWindowMinutes = 15;
-
-    // Important: batch limit to bound memory per run.
-    private const int BatchSize = 500;
+    private readonly int _batchSize = workerOptions.Value.DefaultBatchSize;
+    private readonly int _reminderWindowMinutes = workerOptions.Value.ReminderWindowMinutes;
 
     public async Task ProcessReservationRemindersAsync(CancellationToken cancellationToken)
     {
+        // Create a set to track skipped reservations across batches
+        var skipped = new HashSet<Guid>();
+
         while (true)
         {
-            var processed = await ProcessReminderBatchAsync(cancellationToken);
+            var processed = await ProcessReminderBatchAsync(skipped, cancellationToken);
 
             if (processed == 0)
                 return;
         }
     }
 
-    private async Task<int> ProcessReminderBatchAsync(CancellationToken cancellationToken)
+    private async Task<int> ProcessReminderBatchAsync(HashSet<Guid> skipped, CancellationToken cancellationToken)
     {
         var now = _clock.GetCurrentInstant();
-        var windowEnd = now.Plus(Duration.FromMinutes(ReminderWindowMinutes));
+        var windowEnd = now.Plus(Duration.FromMinutes(_reminderWindowMinutes));
 
-        // Important: no full entities, just the fields needed. AsNoTracking for read-only.
         var dueReservations = await _context.Reservations
             .AsNoTracking()
             .Where(r => r.UtcStartTime > now && r.UtcStartTime <= windowEnd)
             .Where(r => !_context.Notifications.Any(n =>
                 n.ReservationId == r.Id &&
                 n.Type == NotificationType.ReservationReminder))
+            .Where(r => !skipped.Contains(r.Id)) // Exclude poisoned rows
             .OrderBy(r => r.UtcStartTime)
             .Select(r => new
             {
@@ -56,46 +57,40 @@ public class NotificationWorkerService(
                 r.UserId,
                 RoomName = r.Room.Name,
                 r.UtcStartTime,
-                Email = r.User.Email,
+                HasEmail = r.User.Email != null && r.User.Email != "",
                 r.User.EmailNotificationEnabled,
             })
-            .Take(BatchSize)
+            .Take(_batchSize)
             .ToListAsync(cancellationToken);
 
         if (dueReservations.Count == 0)
             return 0;
 
-        _logger.LogInformation(
-            "Processing batch of {Count} reservation reminders (window: {Start} → {End}).",
-            dueReservations.Count, now, windowEnd);
+        _logger.LogInformation("Processing batch of {Count} reservation reminders.", dueReservations.Count);
 
         var notifications = new List<Notification>(dueReservations.Count);
 
         foreach (var r in dueReservations)
         {
-            // Critical #7 + Important: compute remaining minutes instead of hardcoding 15.
-            var minutes = Math.Max(
-                1,
-                (int)Math.Ceiling((r.UtcStartTime - now).TotalMinutes));
+            var minutes = Math.Max(1, (int)Math.Ceiling((r.UtcStartTime - now).TotalMinutes));
+            var unit = minutes == 1 ? "minute" : "minutes";
 
             var title = "Upcoming Reservation Reminder";
-            var message =
-                $"Your reservation for room '{r.RoomName}' starts in about {minutes} minutes.";
+            var message = $"Your reservation for room '{r.RoomName}' starts in about {minutes} {unit}.";
 
             notifications.Add(new Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = r.UserId,
-                ReservationId = r.ReservationId, // Critical #2: dedup key
+                ReservationId = r.ReservationId,
                 Title = title,
-                Message = message,               // stored as plain text
+                Message = message,
                 Type = NotificationType.ReservationReminder,
                 IsRead = false,
                 CreatedAt = now,
             });
         }
 
-        // Critical #5: save once per batch, catch unique-index violations.
         try
         {
             await _context.Notifications.AddRangeAsync(notifications, cancellationToken);
@@ -103,27 +98,46 @@ public class NotificationWorkerService(
         }
         catch (DbUpdateException ex)
         {
-            // A concurrent run inserted the same (ReservationId, Type) — unique index tripped.
-            // Clear the tracker so subsequent SaveChanges calls aren't poisoned.
-            _logger.LogWarning(
-                ex,
-                "Batch insert hit a unique-index conflict. Clearing tracker and continuing.");
-
             _context.ChangeTracker.Clear();
-
-            // The whole batch failed; break out and let the next cron run pick up whatever's left.
-            return 0;
+            _logger.LogWarning(ex, "Batch insert failed, retrying items individually.");
+            notifications = await InsertOneByOneAsync(notifications, skipped, cancellationToken);
         }
 
-        // Critical #4: enqueue one email job per notification, carrying only the id.
-        foreach (var notification in notifications)
+        // Only enqueue for users who have email enabled
+        var emailableReservations = dueReservations
+            .Where(d => d.EmailNotificationEnabled && d.HasEmail)
+            .Select(d => d.ReservationId)
+            .ToHashSet();
+
+        foreach (var notification in notifications.Where(n => emailableReservations.Contains(n.ReservationId!.Value)))
         {
-            _backgroundJobClient.Enqueue<IEmailService>(
-                service => service.SendNotificationEmailAsync(
-                    notification.Id,
-                    CancellationToken.None));
+            _backgroundJobClient.Enqueue<IEmailService>(s => s.SendNotificationEmailAsync(notification.Id, CancellationToken.None));
         }
 
-        return notifications.Count;
+        return dueReservations.Count; // Return the count we attempted, so the loop moves forward
+    }
+
+    private async Task<List<Notification>> InsertOneByOneAsync(
+        List<Notification> items, 
+        HashSet<Guid> skipped, 
+        CancellationToken ct)
+    {
+        var saved = new List<Notification>();
+        foreach (var n in items)
+        {
+            try
+            {
+                _context.Notifications.Add(n);
+                await _context.SaveChangesAsync(ct);
+                saved.Add(n);
+            }
+            catch (DbUpdateException ex)
+            {
+                _context.ChangeTracker.Clear();
+                skipped.Add(n.ReservationId!.Value);
+                _logger.LogWarning(ex, "Skipping reminder for reservation {ReservationId}.", n.ReservationId);
+            }
+        }
+        return saved;
     }
 }

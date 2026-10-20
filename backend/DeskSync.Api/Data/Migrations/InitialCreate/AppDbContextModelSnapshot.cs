@@ -47,6 +47,9 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
                     b.Property<Instant>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Instant?>("EmailSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
 
