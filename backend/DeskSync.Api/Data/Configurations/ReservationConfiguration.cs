@@ -16,12 +16,13 @@ public class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
         builder.Property(r => r.UserId)
                .IsRequired();
 
-        builder.HasOne<Room>()
+        // Bind explicitly to navigation properties
+        builder.HasOne(r => r.Room)
                .WithMany()
                .HasForeignKey(r => r.RoomId)
                .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<User>()
+        builder.HasOne(r => r.User)
                .WithMany()
                .HasForeignKey(r => r.UserId)
                .OnDelete(DeleteBehavior.Cascade);
