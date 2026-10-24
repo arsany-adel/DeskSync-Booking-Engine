@@ -37,9 +37,9 @@ public class NotificationService(INotificationRepository notificationRepository)
     }
 
     public async Task<ErrorOr<Success>> MarkAsReadAsync(
-        Guid notificationId,
-        Guid userId,
-        CancellationToken cancellationToken = default)
+    Guid notificationId,
+    Guid userId,
+    CancellationToken cancellationToken = default)
     {
         var notification = await _notificationRepository.GetByIdAsync(notificationId, cancellationToken);
 
@@ -55,8 +55,8 @@ public class NotificationService(INotificationRepository notificationRepository)
 
         if (!notification.IsRead)
         {
-            notification.IsRead = true;
-            await _notificationRepository.SaveChangesAsync(cancellationToken);
+            // Feedback #5: atomic UPDATE instead of read-modify-write.
+            await _notificationRepository.MarkAsReadAsync(notificationId, cancellationToken);
         }
 
         return Result.Success;

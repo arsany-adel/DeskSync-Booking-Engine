@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using DeskSync.Api.DTOs;
 using DeskSync.Api.DTOs.Common;
 using DeskSync.Api.DTOs.Notifications;
+using DeskSync.Api.Extensions;
 using DeskSync.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,15 +24,16 @@ public class NotificationController(INotificationService notificationService) : 
         StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResult<NotificationResponseDto>>> GetMyNotifications(
         [FromQuery] NotificationSearchQueryDto query,
+        CancellationToken cancellationToken,
         [FromQuery] bool unreadOnly = false)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetUserId();
 
         var result = unreadOnly
             ? await _notificationService.GetUnreadUserNotificationsAsync(
-                userId, query.PageNumber, query.PageSize)
+                userId, query.PageNumber, query.PageSize, cancellationToken)
             : await _notificationService.GetAllUserNotificationsAsync(
-                userId, query.PageNumber, query.PageSize);
+                userId, query.PageNumber, query.PageSize, cancellationToken);
 
         if (result.IsError)
         {
@@ -49,15 +50,14 @@ public class NotificationController(INotificationService notificationService) : 
         StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(
         typeof(ProblemDetails),
-        StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(
-        typeof(ProblemDetails),
         StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> MarkAsRead(Guid id)
+    public async Task<ActionResult> MarkAsRead(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetUserId();
 
-        var result = await _notificationService.MarkAsReadAsync(id, userId);
+        var result = await _notificationService.MarkAsReadAsync(id, userId, cancellationToken);
 
         if (result.IsError)
         {
@@ -65,17 +65,5 @@ public class NotificationController(INotificationService notificationService) : 
         }
 
         return NoContent();
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(userIdString, out Guid userId))
-        {
-            throw new UnauthorizedAccessException("Invalid user token.");
-        }
-
-        return userId;
     }
 }

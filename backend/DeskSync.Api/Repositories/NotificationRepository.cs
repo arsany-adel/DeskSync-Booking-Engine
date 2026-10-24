@@ -67,6 +67,7 @@ public class NotificationRepository(AppDbContext context) : INotificationReposit
     public async Task<Notification?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Notifications
+            .AsNoTracking()
             .FirstOrDefaultAsync(n => n.Id == id, cancellationToken);
     }
 
@@ -80,6 +81,15 @@ public class NotificationRepository(AppDbContext context) : INotificationReposit
         CancellationToken cancellationToken = default)
     {
         await _context.Notifications.AddRangeAsync(notifications, cancellationToken);
+    }
+
+    public async Task MarkAsReadAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await _context.Notifications
+            .Where(n => n.Id == id && !n.IsRead)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(n => n.IsRead, true),
+                cancellationToken);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)

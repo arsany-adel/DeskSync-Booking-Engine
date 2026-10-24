@@ -19,6 +19,11 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
             .HasForeignKey(n => n.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne<Reservation>()
+            .WithMany()
+            .HasForeignKey(n => n.ReservationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAt });
 
         builder.HasIndex(n => new { n.ReservationId, n.Type })

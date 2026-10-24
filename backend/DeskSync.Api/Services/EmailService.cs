@@ -28,10 +28,21 @@ public class EmailService(
         Guid notificationId,
         CancellationToken cancellationToken = default)
     {
+        // Feedback #4: Projection to avoid loading PasswordHash
         var notification = await _context.Notifications
             .AsNoTracking()
-            .Include(n => n.User)
-            .FirstOrDefaultAsync(n => n.Id == notificationId, cancellationToken);
+            .Where(n => n.Id == notificationId)
+            .Select(n => new
+            {
+                n.Title,
+                n.Message,
+                n.CreatedAt,
+                n.IsRead,
+                n.EmailSentAt,
+                UserEmail = n.User.Email,
+                UserEmailNotificationEnabled = n.User.EmailNotificationEnabled,
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (notification is null)
         {
@@ -60,7 +71,7 @@ public class EmailService(
             return; // Dequeue permanently.
         }
 
-        if (!notification.User.EmailNotificationEnabled || string.IsNullOrWhiteSpace(notification.User.Email))
+        if (!notification.UserEmailNotificationEnabled || string.IsNullOrWhiteSpace(notification.UserEmail))
         {
             return; // User disabled preferences. Dequeue permanently.
         }
@@ -68,7 +79,7 @@ public class EmailService(
         try
         {
             var message = BuildMessage(
-                toEmail: notification.User.Email,
+                toEmail: notification.UserEmail, // <--- Fixed here
                 subject: notification.Title,
                 title: notification.Title,
                 body: notification.Message);

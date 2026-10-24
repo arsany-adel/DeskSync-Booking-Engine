@@ -23,5 +23,7 @@ public interface INotificationRepository
 
     Task AddRangeAsync(IEnumerable<Notification> notifications, CancellationToken cancellationToken = default);
 
+    Task MarkAsReadAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

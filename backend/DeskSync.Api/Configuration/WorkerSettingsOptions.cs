@@ -14,4 +14,7 @@ public class WorkerSettingsOptions
     // starting within the next 15 minutes, regardless of when the job fires.
     // This means reminders arrive 10-15 minutes before the start time.
     public int ReminderWindowMinutes { get; init; } = 15;
+
+    [Range(1, 365, ErrorMessage = "Retention days must be between 1 and 365.")]
+    public int NotificationRetentionDays { get; init; } = 30;
 }

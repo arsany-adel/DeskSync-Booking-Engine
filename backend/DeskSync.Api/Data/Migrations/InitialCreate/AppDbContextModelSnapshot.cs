@@ -323,6 +323,11 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
 
             modelBuilder.Entity("DeskSync.Api.Entities.Notification", b =>
                 {
+                    b.HasOne("DeskSync.Api.Entities.Reservation", null)
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("DeskSync.Api.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
