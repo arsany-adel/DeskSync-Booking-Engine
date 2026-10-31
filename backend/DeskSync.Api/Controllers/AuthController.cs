@@ -1,4 +1,5 @@
 using DeskSync.Api.DTOs.Users;
+using DeskSync.Api.Extensions;
 using DeskSync.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -75,5 +76,52 @@ public class AuthController(IAuthService authService) : BaseApiController
         var result = await _authService.ConfirmEmailAsync(dto);
         if (result.IsError) return ErrorResult(result.Errors);
         return Ok(new { message = "Email confirmed successfully." });
+    }
+
+    [HttpPost("2fa/enable")]
+    [Authorize]
+    [ProducesResponseType(typeof(EnableTwoFactorResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<EnableTwoFactorResponse>> EnableTwoFactor()
+    {
+        var userId = User.GetUserId();
+        var result = await _authService.EnableTwoFactorAsync(userId);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(result.Value);
+    }
+
+    [HttpPost("2fa/verify")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyAndActivateTwoFactor([FromBody] VerifyTwoFactorRequest dto)
+    {
+        var userId = User.GetUserId();
+        var result = await _authService.VerifyAndActivateTwoFactorAsync(userId, dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "Two-factor authentication enabled successfully." });
+    }
+
+    [HttpPost("2fa/disable")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DisableTwoFactor([FromBody] DisableTwoFactorRequest dto)
+    {
+        var userId = User.GetUserId();
+        var result = await _authService.DisableTwoFactorAsync(userId, dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "Two-factor authentication disabled." });
+    }
+
+    [HttpPost("2fa/login")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponse>> VerifyTwoFactorLogin([FromBody] VerifyTwoFactorLoginRequest dto)
+    {
+        var result = await _authService.VerifyTwoFactorLoginAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(result.Value);
     }
 }

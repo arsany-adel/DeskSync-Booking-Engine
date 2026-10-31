@@ -114,5 +114,25 @@ public static class DomainErrors
             code: "Auth.AccountHasNoPassword",
             description: "This account was created via social login. Use 'Forgot Password' to set a password."
         );
+
+                public static readonly Error TwoFactorNotEnabled = Error.Validation(
+            code: "Auth.TwoFactorNotEnabled",
+            description: "Two-factor authentication is not enabled for this account."
+        );
+
+        public static readonly Error InvalidTwoFactorCode = Error.Unauthorized(
+            code: "Auth.InvalidTwoFactorCode",
+            description: "The authenticator code is invalid or expired."
+        );
+
+        public static readonly Error TwoFactorAlreadyEnabled = Error.Conflict(
+            code: "Auth.TwoFactorAlreadyEnabled",
+            description: "Two-factor authentication is already enabled."
+        );
+
+        public static readonly Error TwoFactorNotActivated = Error.Validation(
+            code: "Auth.TwoFactorNotActivated",
+            description: "Two-factor authentication setup was not completed. Please try enabling again."
+        );
     }
 }

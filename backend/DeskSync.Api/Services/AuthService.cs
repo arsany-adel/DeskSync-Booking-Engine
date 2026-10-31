@@ -9,6 +9,7 @@ using ErrorOr;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using NodaTime;
+using OtpNet;
 
 namespace DeskSync.Api.Services;
 
@@ -26,6 +27,7 @@ public class AuthService(
     private readonly IClock _clock = clock;
     private readonly string _frontendBaseUrl = frontendOptions.Value.BaseUrl;
     private readonly IPasswordHasher<User> _passwordHasher = passwordHasher;
+    private const string AuthenticatorIssuer = "DeskSync";
 
     public async Task<ErrorOr<AuthResponse>> RegisterStandardUserAsync(RegisterStandardUserRequestDto dto)
     {
@@ -89,6 +91,17 @@ public class AuthService(
         {
             user.UpdatePassword(_passwordHasher.HashPassword(user, dto.Password));
             await _userRepository.SaveChangesAsync();
+        }
+
+        if (user.TwoFactorEnabled)
+        {
+            return new AuthResponse(
+                AccessToken: string.Empty, 
+                RefreshToken: string.Empty,
+                UserId: user.Id,
+                Email: user.Email,
+                Username: user.Username,
+                Role: "RequiresTwoFactor");
         }
 
         return new AuthResponse(
@@ -165,5 +178,83 @@ public class AuthService(
         await _userRepository.SaveChangesAsync();
 
         return Result.Success;
+    }
+
+    public async Task<ErrorOr<EnableTwoFactorResponse>> EnableTwoFactorAsync(Guid userId)
+    {
+        User? user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null) return DomainErrors.Auth.InvalidCredentials;
+
+        if (user.TwoFactorEnabled) return DomainErrors.Auth.TwoFactorAlreadyEnabled;
+
+        // 20-byte secret (160 bits, standard for TOTP)
+        var secretBytes = KeyGeneration.GenerateRandomKey(20);
+        string base32Secret = Base32Encoding.ToString(secretBytes);
+
+        user.SetPendingTwoFactorSecret(base32Secret);
+        await _userRepository.SaveChangesAsync();
+
+        // Build otpauth:// URI for the frontend to render as a QR code
+        string otpauthUri =
+            $"otpauth://totp/{AuthenticatorIssuer}:{Uri.EscapeDataString(user.Email)}" +
+            $"?secret={base32Secret}&issuer={AuthenticatorIssuer}&algorithm=SHA1&digits=6&period=30";
+
+        return new EnableTwoFactorResponse(base32Secret, otpauthUri);
+    }
+
+    public async Task<ErrorOr<Success>> VerifyAndActivateTwoFactorAsync(Guid userId, VerifyTwoFactorRequest dto)
+    {
+        User? user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null || user.TwoFactorSecret == null)
+            return DomainErrors.Auth.TwoFactorNotActivated;
+
+        if (user.TwoFactorEnabled) return DomainErrors.Auth.TwoFactorAlreadyEnabled;
+
+        if (!VerifyTotpCode(user.TwoFactorSecret, dto.Code))
+            return DomainErrors.Auth.InvalidTwoFactorCode;
+
+        user.ActivateTwoFactor();
+        await _userRepository.SaveChangesAsync();
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> DisableTwoFactorAsync(Guid userId, DisableTwoFactorRequest dto)
+    {
+        User? user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null || user.PasswordHash == null)
+            return DomainErrors.Auth.InvalidCredentials;
+
+        var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
+        if (verificationResult == PasswordVerificationResult.Failed)
+            return DomainErrors.Auth.InvalidCredentials;
+
+        if (!user.TwoFactorEnabled) return DomainErrors.Auth.TwoFactorNotEnabled;
+
+        user.DisableTwoFactor();
+        await _userRepository.SaveChangesAsync();
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<AuthResponse>> VerifyTwoFactorLoginAsync(VerifyTwoFactorLoginRequest dto)
+    {
+        User? user = await _userRepository.GetUserByEmailAsync(dto.Email);
+        if (user == null || user.TwoFactorSecret == null || !user.TwoFactorEnabled)
+            return DomainErrors.Auth.TwoFactorNotEnabled;
+
+        if (!VerifyTotpCode(user.TwoFactorSecret, dto.Code))
+            return DomainErrors.Auth.InvalidTwoFactorCode;
+
+        return new AuthResponse(
+            _tokenService.GenerateAccessToken(user),
+            _tokenService.GenerateRefreshToken(),
+            user.Id, user.Email, user.Username, user.Role.ToString());
+    }
+
+    private static bool VerifyTotpCode(string base32Secret, string code)
+    {
+        var secretBytes = Base32Encoding.ToBytes(base32Secret);
+        var totp = new Totp(secretBytes);
+        // VerifyTotp checks current window ± a few seconds of drift
+        return totp.VerifyTotp(code, out _, new VerificationWindow(previous: 1, future: 1));
     }
 }

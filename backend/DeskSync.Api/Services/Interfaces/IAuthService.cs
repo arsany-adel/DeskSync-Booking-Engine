@@ -11,4 +11,8 @@ public interface IAuthService
     Task<ErrorOr<Success>> ForgotPasswordAsync(ForgotPasswordRequest dto);
     Task<ErrorOr<Success>> ResetPasswordAsync(ResetPasswordRequest dto);
     Task<ErrorOr<Success>> ConfirmEmailAsync(ConfirmEmailRequest dto);
+    Task<ErrorOr<EnableTwoFactorResponse>> EnableTwoFactorAsync(Guid userId);
+    Task<ErrorOr<Success>> VerifyAndActivateTwoFactorAsync(Guid userId, VerifyTwoFactorRequest dto);
+    Task<ErrorOr<Success>> DisableTwoFactorAsync(Guid userId, DisableTwoFactorRequest dto);
+    Task<ErrorOr<AuthResponse>> VerifyTwoFactorLoginAsync(VerifyTwoFactorLoginRequest dto);
 }

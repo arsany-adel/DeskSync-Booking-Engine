@@ -17,6 +17,7 @@
       <PackageReference Include="NodaTime" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
+      <PackageReference Include="Otp.NET" />
       <PackageReference Include="Swashbuckle.AspNetCore" />
       <PackageReference Include="System.Security.Cryptography.Pkcs" />
     </ItemGroup>

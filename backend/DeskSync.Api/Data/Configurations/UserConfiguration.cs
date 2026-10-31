@@ -26,6 +26,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
               builder.Property(u => u.TwoFactorEnabled).IsRequired().HasDefaultValue(false);
               builder.Property(u => u.TwoFactorSecret).IsRequired(false).HasMaxLength(128);
+              builder.Property(u => u.TwoFactorPendingActivation).IsRequired().HasDefaultValue(false);
 
               builder.HasIndex(u => u.Username).IsUnique();
               builder.HasIndex(u => u.Email).IsUnique();

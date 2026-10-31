@@ -245,6 +245,11 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<bool>("TwoFactorPendingActivation")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("TwoFactorSecret")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");

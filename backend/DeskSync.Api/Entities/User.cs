@@ -24,6 +24,7 @@ public class User
     public string? PasswordResetToken { get; private set; }
     public Instant? PasswordResetTokenExpiresAt { get; private set; }
     public bool TwoFactorEnabled { get; private set; } = false;
+    public bool TwoFactorPendingActivation { get; private set; } = false;
     public string? TwoFactorSecret { get; private set; }
 
     private static readonly Regex EmailRegex = new(
@@ -107,15 +108,23 @@ public class User
         PasswordResetTokenExpiresAt = null;
     }
 
-    public void EnableTwoFactor(string secret)
+    public void SetPendingTwoFactorSecret(string secret)
     {
         TwoFactorSecret = secret;
+        TwoFactorEnabled = false;
+        TwoFactorPendingActivation = true;
+    }
+
+    public void ActivateTwoFactor()
+    {
         TwoFactorEnabled = true;
+        TwoFactorPendingActivation = false;
     }
 
     public void DisableTwoFactor()
     {
         TwoFactorSecret = null;
         TwoFactorEnabled = false;
+        TwoFactorPendingActivation = false;
     }
 }
