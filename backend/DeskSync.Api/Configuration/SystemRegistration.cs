@@ -21,6 +21,11 @@ public static class SystemRegistration
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<JwtSettingsOptions>()
+            .Bind(configuration.GetSection(JwtSettingsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         return services;
     }
 

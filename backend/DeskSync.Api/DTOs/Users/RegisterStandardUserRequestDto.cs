@@ -18,7 +18,8 @@ public record RegisterStandardUserRequestDto (
     [EmailAddress(ErrorMessage = "Invalid email address")]
     string Email,
 
+    [Required(ErrorMessage="Password is required")]
     [MaxLength(64, ErrorMessage="Password must be at most 64 characters long")]
     [MinLength(16, ErrorMessage ="Password must be at least 16 characters long")]
-    string? Password
+    string Password
 );

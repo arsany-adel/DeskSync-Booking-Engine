@@ -1,6 +1,9 @@
+using System.Text;
 using DeskSync.Api.Configuration;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
-
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi; // Use the root namespace
 using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,15 +17,54 @@ builder.Services.AddApplicationServices();
 builder.Services.AddConfigurationSettings(builder.Configuration);
 builder.Services.AddBackgroundJobs(connectionString);
 builder.Services.AddApiControllers();
-builder.Services.AddSwaggerDocumentation();
 
-builder.Services.AddAuthentication(defaultScheme: "Bearer")
-    .AddBearerToken("Bearer");
+// 1. Configure Swagger with the new .NET 10 / OpenApi 2.x syntax
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter your JWT token."
+    });
+
+    // The new, correct way to reference the security scheme
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
+
+// 2. Configure JWT Authentication
+var jwtSection = builder.Configuration.GetSection(JwtSettingsOptions.SectionName);
+var jwtSecret = jwtSection["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is missing.");
+var jwtIssuer = jwtSection["Issuer"] ?? "DeskSync";
+var jwtAudience = jwtSection["Audience"] ?? "DeskSyncFrontend";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ClockSkew = TimeSpan.Zero,
+        };
+    });
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Maps UnauthorizedAccessException to 401 instead of 500
+// Global Exception Handler
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -53,9 +95,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Don't forget Hangfire Dashboard you must secure it with authentication and authorization in production
-
 app.UseRecurringJobs();
 
 app.Run();

@@ -6,45 +6,31 @@ namespace DeskSync.Api.Data.Configurations;
 
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public void Configure(EntityTypeBuilder<User> builder)
-    {
-       builder.HasKey(u => u.Id);
+       public void Configure(EntityTypeBuilder<User> builder)
+       {
+              builder.HasKey(u => u.Id);
 
-       builder.Property(u => u.Role)
-              .IsRequired()
-              .HasConversion<string>()
-              .HasMaxLength(50);
+              builder.Property(u => u.Role).IsRequired().HasConversion<string>().HasMaxLength(50);
+              builder.Property(u => u.FirstName).IsRequired(false).HasMaxLength(100);
+              builder.Property(u => u.LastName).IsRequired(false).HasMaxLength(100);
+              builder.Property(u => u.Username).IsRequired().HasMaxLength(100);
+              builder.Property(u => u.Email).IsRequired().HasMaxLength(100);
+              builder.Property(u => u.PasswordHash).IsRequired(false).HasMaxLength(128);
+              builder.Property(u => u.EmailNotificationEnabled).IsRequired().HasDefaultValue(false);
 
-       builder.Property(u => u.FirstName)
-              .IsRequired(false)
-              .HasMaxLength(100);
+              // Phase 1: Email confirmation
+              builder.Property(u => u.EmailConfirmed).IsRequired().HasDefaultValue(false);
+              builder.Property(u => u.EmailConfirmationToken).IsRequired(false).HasMaxLength(128);
 
-       builder.Property(u => u.LastName)
-              .IsRequired(false)
-              .HasMaxLength(100);
+              // Phase 2: Password reset
+              builder.Property(u => u.PasswordResetToken).IsRequired(false).HasMaxLength(128);
+              builder.Property(u => u.PasswordResetTokenExpiresAt).IsRequired(false);
 
-       builder.Property(u => u.Username)
-              .IsRequired()
-              .HasMaxLength(100);
+              // Phase 3: 2FA
+              builder.Property(u => u.TwoFactorEnabled).IsRequired().HasDefaultValue(false);
+              builder.Property(u => u.TwoFactorSecret).IsRequired(false).HasMaxLength(128);
 
-       builder.Property(u => u.Email)
-              .IsRequired()
-              .HasMaxLength(100);
-
-       builder.Property(u => u.PasswordHash)
-              .IsRequired(false)
-              .HasMaxLength(128);
-
-       builder.Property(u => u.EmailNotificationEnabled)
-              .IsRequired()
-              .HasDefaultValue(false);
-
-
-       // indexes
-       builder.HasIndex(u => u.Username)
-              .IsUnique();
-
-       builder.HasIndex(u => u.Email)
-              .IsUnique();
-    }
+              builder.HasIndex(u => u.Username).IsUnique();
+              builder.HasIndex(u => u.Email).IsUnique();
+       }
 }

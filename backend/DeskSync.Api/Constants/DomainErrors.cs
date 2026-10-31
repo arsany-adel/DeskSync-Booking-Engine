@@ -72,4 +72,27 @@ public static class DomainErrors
             description: "Failed to send email. Please try again later."
         );
     }
+
+    public static class Auth
+    {
+        public static readonly Error InvalidCredentials = Error.Unauthorized(
+            code: "Auth.InvalidCredentials",
+            description: "Invalid email or password."
+        );
+
+        public static readonly Error EmailAlreadyInUse = Error.Conflict(
+            code: "Auth.EmailAlreadyInUse",
+            description: "Email is already in use."
+        );
+
+        public static readonly Error UsernameAlreadyInUse = Error.Conflict(
+            code: "Auth.UsernameAlreadyInUse",
+            description: "Username is already in use."
+        );
+
+        public static readonly Error RefreshNotImplemented = Error.Failure(
+            code: "Auth.RefreshNotImplemented",
+            description: "Refresh token flow is not yet implemented."
+        );
+    }
 }

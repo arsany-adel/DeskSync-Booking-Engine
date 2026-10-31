@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using NodaTime;
 
 namespace DeskSync.Api.Entities;
 
@@ -18,6 +19,18 @@ public class User
     public string Email { get; private set; }
     public string? PasswordHash { get; private set; }
     public bool EmailNotificationEnabled { get; private set; }
+
+    // Phase 1: Email confirmation
+    public bool EmailConfirmed { get; private set; } = false;
+    public string? EmailConfirmationToken { get; private set; }
+
+    // Phase 2: Password reset
+    public string? PasswordResetToken { get; private set; }
+    public Instant? PasswordResetTokenExpiresAt { get; private set; }
+
+    // Phase 3: 2FA
+    public bool TwoFactorEnabled { get; private set; } = false;
+    public string? TwoFactorSecret { get; private set; }
 
     private static readonly Regex EmailRegex = new(
         @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
@@ -79,4 +92,36 @@ public class User
     }
 
     public void UpdatePassword(string? passwordHash) => PasswordHash = passwordHash;
+
+    public void ConfirmEmail()
+    {
+        EmailConfirmed = true;
+        EmailConfirmationToken = null;
+    }
+
+    public void SetEmailConfirmationToken(string token) => EmailConfirmationToken = token;
+
+    public void SetPasswordResetToken(string token, Instant expiresAt)
+    {
+        PasswordResetToken = token;
+        PasswordResetTokenExpiresAt = expiresAt;
+    }
+
+    public void ClearPasswordResetToken()
+    {
+        PasswordResetToken = null;
+        PasswordResetTokenExpiresAt = null;
+    }
+
+    public void EnableTwoFactor(string secret)
+    {
+        TwoFactorSecret = secret;
+        TwoFactorEnabled = true;
+    }
+
+    public void DisableTwoFactor()
+    {
+        TwoFactorSecret = null;
+        TwoFactorEnabled = false;
+    }
 }

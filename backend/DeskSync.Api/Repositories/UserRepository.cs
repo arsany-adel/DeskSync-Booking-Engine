@@ -25,6 +25,16 @@ public class UserRepository(AppDbContext context) : IUserRepository
         return await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
     }
 
+    public async Task<User?> GetUserByPasswordResetTokenAsync(string token)
+    {
+        return await _context.Users.FirstOrDefaultAsync(user => user.PasswordResetToken == token);
+    }
+
+    public async Task<User?> GetUserByEmailConfirmationTokenAsync(string token)
+    {
+        return await _context.Users.FirstOrDefaultAsync(user => user.EmailConfirmationToken == token);
+    }
+
     public async Task<bool> IsEmailUnique(string email)
     {
         return await _context.Users.FirstOrDefaultAsync(user => user.Email == email) == null;

@@ -7,9 +7,11 @@ public interface IUserRepository
     Task<User?> GetUserByIdAsync(Guid id);
     Task<User?> GetUserByUsernameAsync(string username);
     Task<User?> GetUserByEmailAsync(string email);
+    Task<User?> GetUserByPasswordResetTokenAsync(string token);
+    Task<User?> GetUserByEmailConfirmationTokenAsync(string token);
     Task<bool> IsEmailUnique(string email);
     Task<bool> IsUsernameUnique(string username);
     Task AddUserAsync(User user);
     Task<bool> DeleteUserAsync(Guid id);
-    Task SaveChangesAsync();    
+    Task SaveChangesAsync();
 }
