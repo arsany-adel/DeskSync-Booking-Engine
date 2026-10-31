@@ -19,10 +19,7 @@ public class AuthController(IAuthService authService) : BaseApiController
     public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterStandardUserRequestDto dto)
     {
         var result = await _authService.RegisterStandardUserAsync(dto);
-
-        if (result.IsError)
-            return ErrorResult(result.Errors);
-
+        if (result.IsError) return ErrorResult(result.Errors);
         return StatusCode(StatusCodes.Status201Created, result.Value);
     }
 
@@ -33,10 +30,7 @@ public class AuthController(IAuthService authService) : BaseApiController
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginUserRequestDto dto)
     {
         var result = await _authService.LoginStandardUserAsync(dto);
-
-        if (result.IsError)
-            return ErrorResult(result.Errors);
-
+        if (result.IsError) return ErrorResult(result.Errors);
         return Ok(result.Value);
     }
 
@@ -47,10 +41,39 @@ public class AuthController(IAuthService authService) : BaseApiController
     public async Task<ActionResult<AuthResponse>> Refresh([FromBody] RefreshTokenRequest dto)
     {
         var result = await _authService.RefreshTokenAsync(dto.RefreshToken);
-
-        if (result.IsError)
-            return ErrorResult(result.Errors);
-
+        if (result.IsError) return ErrorResult(result.Errors);
         return Ok(result.Value);
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest dto)
+    {
+        var result = await _authService.ForgotPasswordAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "If the email exists, a reset link has been sent." });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest dto)
+    {
+        var result = await _authService.ResetPasswordAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "Password has been reset successfully." });
+    }
+
+    [HttpPost("confirm-email")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest dto)
+    {
+        var result = await _authService.ConfirmEmailAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "Email confirmed successfully." });
     }
 }

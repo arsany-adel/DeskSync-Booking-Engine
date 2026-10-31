@@ -20,6 +20,6 @@ public record RegisterStandardUserRequestDto (
 
     [Required(ErrorMessage="Password is required")]
     [MaxLength(64, ErrorMessage="Password must be at most 64 characters long")]
-    [MinLength(16, ErrorMessage ="Password must be at least 16 characters long")]
+    [MinLength(8, ErrorMessage ="Password must be at least 8 characters long")]
     string Password
 );

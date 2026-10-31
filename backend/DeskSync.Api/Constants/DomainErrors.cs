@@ -94,5 +94,25 @@ public static class DomainErrors
             code: "Auth.RefreshNotImplemented",
             description: "Refresh token flow is not yet implemented."
         );
+
+        public static readonly Error InvalidToken = Error.Validation(
+            code: "Auth.InvalidToken",
+            description: "The provided token is invalid."
+        );
+
+        public static readonly Error TokenExpired = Error.Validation(
+            code: "Auth.TokenExpired",
+            description: "The provided token has expired."
+        );
+
+        public static readonly Error EmailNotConfirmed = Error.Unauthorized(
+            code: "Auth.EmailNotConfirmed",
+            description: "Please confirm your email address before logging in."
+        );
+
+        public static readonly Error AccountHasNoPassword = Error.Validation(
+            code: "Auth.AccountHasNoPassword",
+            description: "This account was created via social login. Use 'Forgot Password' to set a password."
+        );
     }
 }

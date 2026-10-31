@@ -26,6 +26,11 @@ public static class SystemRegistration
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<FrontendSettingsOptions>()
+            .Bind(configuration.GetSection(FrontendSettingsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         return services;
     }
 

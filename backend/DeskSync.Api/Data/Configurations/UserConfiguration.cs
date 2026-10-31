@@ -18,15 +18,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
               builder.Property(u => u.PasswordHash).IsRequired(false).HasMaxLength(128);
               builder.Property(u => u.EmailNotificationEnabled).IsRequired().HasDefaultValue(false);
 
-              // Phase 1: Email confirmation
               builder.Property(u => u.EmailConfirmed).IsRequired().HasDefaultValue(false);
               builder.Property(u => u.EmailConfirmationToken).IsRequired(false).HasMaxLength(128);
 
-              // Phase 2: Password reset
               builder.Property(u => u.PasswordResetToken).IsRequired(false).HasMaxLength(128);
               builder.Property(u => u.PasswordResetTokenExpiresAt).IsRequired(false);
 
-              // Phase 3: 2FA
               builder.Property(u => u.TwoFactorEnabled).IsRequired().HasDefaultValue(false);
               builder.Property(u => u.TwoFactorSecret).IsRequired(false).HasMaxLength(128);
 

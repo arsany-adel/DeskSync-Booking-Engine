@@ -3,7 +3,7 @@ using DeskSync.Api.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi; // Use the root namespace
+using Microsoft.OpenApi;
 using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +18,7 @@ builder.Services.AddConfigurationSettings(builder.Configuration);
 builder.Services.AddBackgroundJobs(connectionString);
 builder.Services.AddApiControllers();
 
-// 1. Configure Swagger with the new .NET 10 / OpenApi 2.x syntax
+// Swagger with JWT
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -31,14 +31,13 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Enter your JWT token."
     });
 
-    // The new, correct way to reference the security scheme
     options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
         [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
 });
 
-// 2. Configure JWT Authentication
+// JWT Authentication
 var jwtSection = builder.Configuration.GetSection(JwtSettingsOptions.SectionName);
 var jwtSecret = jwtSection["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is missing.");
 var jwtIssuer = jwtSection["Issuer"] ?? "DeskSync";
@@ -61,6 +60,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// CORS: only allow origins from configuration
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -90,6 +105,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     app.UseHangfireDashboard("/hangfire");
 }
+
+// ⚠️ MUST come before UseAuthentication/UseAuthorization
+app.UseCors("FrontendPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();

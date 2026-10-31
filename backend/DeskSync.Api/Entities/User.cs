@@ -19,16 +19,10 @@ public class User
     public string Email { get; private set; }
     public string? PasswordHash { get; private set; }
     public bool EmailNotificationEnabled { get; private set; }
-
-    // Phase 1: Email confirmation
     public bool EmailConfirmed { get; private set; } = false;
     public string? EmailConfirmationToken { get; private set; }
-
-    // Phase 2: Password reset
     public string? PasswordResetToken { get; private set; }
     public Instant? PasswordResetTokenExpiresAt { get; private set; }
-
-    // Phase 3: 2FA
     public bool TwoFactorEnabled { get; private set; } = false;
     public string? TwoFactorSecret { get; private set; }
 
