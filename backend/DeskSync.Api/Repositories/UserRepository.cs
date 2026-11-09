@@ -15,6 +15,13 @@ public class UserRepository(AppDbContext context) : IUserRepository
         return await _context.Users.FindAsync(id);
     }
 
+    public async Task<UserLogin?> GetUserLoginAsync(ProviderType provider, string providerKey)
+    {
+        return await _context.UserLogins
+            .Include(l => l.User)
+            .FirstOrDefaultAsync(l => l.Provider == provider && l.ProviderKey == providerKey);
+    }
+
     public async Task<User?> GetUserByUsernameAsync(string username)
     {
         return await _context.Users.FirstOrDefaultAsync(user => user.Username == username);
@@ -48,6 +55,11 @@ public class UserRepository(AppDbContext context) : IUserRepository
     public async Task AddUserAsync(User user)
     {
         await _context.Users.AddAsync(user);
+    }
+
+    public async Task AddUserLoginAsync(UserLogin login)
+    {
+        await _context.UserLogins.AddAsync(login);
     }
 
     public async Task<bool> DeleteUserAsync(Guid id)

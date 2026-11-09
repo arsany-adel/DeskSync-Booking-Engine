@@ -13,6 +13,7 @@ public static class ApplicationRegistration
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<ISocialAuthService, SocialAuthService>();
 
         services.AddScoped<IReservationService, ReservationService>();
         services.AddScoped<IRoomService, RoomService>();

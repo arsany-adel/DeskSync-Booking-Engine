@@ -5,6 +5,7 @@ namespace DeskSync.Api.Repositories.Interfaces;
 public interface IUserRepository
 {
     Task<User?> GetUserByIdAsync(Guid id);
+    Task<UserLogin?> GetUserLoginAsync(ProviderType provider, string providerKey);
     Task<User?> GetUserByUsernameAsync(string username);
     Task<User?> GetUserByEmailAsync(string email);
     Task<User?> GetUserByPasswordResetTokenAsync(string token);
@@ -12,6 +13,7 @@ public interface IUserRepository
     Task<bool> IsEmailUnique(string email);
     Task<bool> IsUsernameUnique(string username);
     Task AddUserAsync(User user);
+    Task AddUserLoginAsync(UserLogin login);
     Task<bool> DeleteUserAsync(Guid id);
     Task SaveChangesAsync();
 }

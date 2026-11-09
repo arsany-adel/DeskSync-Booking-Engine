@@ -12,7 +12,9 @@
       <PackageReference Include="Hangfire" />
       <PackageReference Include="Hangfire.PostgreSql" />
       <PackageReference Include="MailKit" />
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
       <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
       <PackageReference Include="NodaTime" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />

@@ -441,11 +441,13 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
 
             modelBuilder.Entity("DeskSync.Api.Entities.UserLogin", b =>
                 {
-                    b.HasOne("DeskSync.Api.Entities.User", null)
+                    b.HasOne("DeskSync.Api.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

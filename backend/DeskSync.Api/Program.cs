@@ -17,6 +17,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddConfigurationSettings(builder.Configuration);
 builder.Services.AddBackgroundJobs(connectionString);
 builder.Services.AddApiControllers();
+builder.Services.AddHttpClient(); // <-- NEW
 
 // Swagger with JWT
 builder.Services.AddEndpointsApiExplorer();
@@ -59,9 +60,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// 👇 REMOVED ALL OAUTH MIDDLEWARE 👇
+
 builder.Services.AddAuthorization();
 
-// CORS: only allow origins from configuration
+// CORS
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? Array.Empty<string>();
@@ -79,7 +82,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Global Exception Handler
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -106,7 +108,6 @@ if (app.Environment.IsDevelopment())
     app.UseHangfireDashboard("/hangfire");
 }
 
-// ⚠️ MUST come before UseAuthentication/UseAuthorization
 app.UseCors("FrontendPolicy");
 
 app.UseAuthentication();

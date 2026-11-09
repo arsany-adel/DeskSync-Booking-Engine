@@ -139,5 +139,20 @@ public static class DomainErrors
             code: "Auth.AdminRequiresTwoFactor",
             description: "Administrator accounts must have two-factor authentication enabled. Please set up 2FA before logging in."
         );
+
+        public static readonly Error OAuthProviderNotSupported = Error.Validation(
+            code: "Auth.OAuthProviderNotSupported",
+            description: "The requested social login provider is not supported."
+        );
+
+        public static readonly Error OAuthEmailNotVerified = Error.Unauthorized(
+            code: "Auth.OAuthEmailNotVerified",
+            description: "Your social provider did not return a verified email address. Please verify your email with the provider first."
+        );
+
+        public static readonly Error OAuthFailed = Error.Failure(
+            code: "Auth.OAuthFailed",
+            description: "Social login failed. Please try again."
+        );
     }
 }

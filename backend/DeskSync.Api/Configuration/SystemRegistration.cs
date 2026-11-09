@@ -31,6 +31,11 @@ public static class SystemRegistration
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<OAuthSettingsOptions>()
+            .Bind(configuration.GetSection(OAuthSettingsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         return services;
     }
 
