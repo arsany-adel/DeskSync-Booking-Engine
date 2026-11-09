@@ -71,5 +71,14 @@ public class UserRepository(AppDbContext context) : IUserRepository
         return affectedRows > 0;
     }
 
+    public async Task<IReadOnlyList<ProviderType>> GetLinkedProvidersAsync(Guid userId)
+    {
+        return await _context.UserLogins
+            .AsNoTracking()
+            .Where(l => l.UserId == userId)
+            .Select(l => l.Provider)
+            .ToListAsync();
+    }
+
     public async Task SaveChangesAsync() => await _context.SaveChangesAsync(); 
 }

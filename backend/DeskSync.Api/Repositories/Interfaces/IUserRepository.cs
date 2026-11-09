@@ -15,5 +15,6 @@ public interface IUserRepository
     Task AddUserAsync(User user);
     Task AddUserLoginAsync(UserLogin login);
     Task<bool> DeleteUserAsync(Guid id);
+    Task<IReadOnlyList<ProviderType>> GetLinkedProvidersAsync(Guid userId);
     Task SaveChangesAsync();
 }

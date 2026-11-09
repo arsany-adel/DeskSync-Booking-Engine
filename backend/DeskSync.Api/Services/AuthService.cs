@@ -121,12 +121,22 @@ public class AuthService(
             user.Id, user.Email, user.Username, user.Role.ToString());
     }
 
-        public async Task<ErrorOr<AuthResponse>> RefreshTokenAsync(string refreshToken)
+    public async Task<ErrorOr<AuthResponse>> RefreshTokenAsync(string refreshToken)
     {
         var token = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
 
-        if (token == null || token.RevokedAt != null)
+        if (token == null)
             return DomainErrors.Auth.InvalidToken;
+
+        // Reuse detection: a revoked token being presented means either
+        // (a) the client replayed an old token, or (b) it was stolen.
+        // Treat as compromise and revoke every active token for this user.
+        if (token.RevokedAt != null)
+        {
+            await _refreshTokenRepository.RevokeAllForUserAsync(
+                token.UserId, _clock.GetCurrentInstant());
+            return DomainErrors.Auth.InvalidToken;
+        }
 
         if (token.ExpiresAt < _clock.GetCurrentInstant())
             return DomainErrors.Auth.TokenExpired;
@@ -299,5 +309,25 @@ public class AuthService(
         var totp = new Totp(secretBytes);
         // VerifyTotp checks current window ± a few seconds of drift
         return totp.VerifyTotp(code, out _, new VerificationWindow(previous: 1, future: 1));
+    }
+
+    public async Task<ErrorOr<UserProfileResponse>> GetProfileAsync(Guid userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null)
+            return DomainErrors.Auth.InvalidCredentials;
+
+        var providers = await _userRepository.GetLinkedProvidersAsync(userId);
+
+        return new UserProfileResponse(
+            user.Id,
+            user.Email,
+            user.Username,
+            user.FirstName,
+            user.LastName,
+            user.Role.ToString(),
+            user.EmailConfirmed,
+            user.TwoFactorEnabled,
+            providers.Select(p => p.ToString()).ToList());
     }
 }

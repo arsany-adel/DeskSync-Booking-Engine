@@ -95,12 +95,12 @@ public static class DomainErrors
             description: "Refresh token flow is not yet implemented."
         );
 
-        public static readonly Error InvalidToken = Error.Validation(
+        public static readonly Error InvalidToken = Error.Unauthorized(
             code: "Auth.InvalidToken",
             description: "The provided token is invalid."
         );
 
-        public static readonly Error TokenExpired = Error.Validation(
+        public static readonly Error TokenExpired = Error.Unauthorized(
             code: "Auth.TokenExpired",
             description: "The provided token has expired."
         );

@@ -133,4 +133,16 @@ public class AuthController(IAuthService authService) : BaseApiController
         if (result.IsError) return ErrorResult(result.Errors);
         return Ok(result.Value);
     }
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserProfileResponse>> GetMe()
+    {
+        var userId = User.GetUserId();
+        var result = await _authService.GetProfileAsync(userId);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(result.Value);
+    }
 }
