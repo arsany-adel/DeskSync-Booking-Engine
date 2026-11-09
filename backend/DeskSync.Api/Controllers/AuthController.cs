@@ -35,6 +35,15 @@ public class AuthController(IAuthService authService) : BaseApiController
         return Ok(result.Value);
     }
 
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest dto)
+    {
+        await _authService.LogoutAsync(dto.RefreshToken);
+        return Ok(new { message = "Logged out successfully." });
+    }
+
     [HttpPost("refresh")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]

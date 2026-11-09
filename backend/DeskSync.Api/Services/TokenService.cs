@@ -7,12 +7,15 @@ using DeskSync.Api.Entities;
 using DeskSync.Api.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using NodaTime;
 
 namespace DeskSync.Api.Services;
 
-public class TokenService(IOptions<JwtSettingsOptions> jwtOptions) : ITokenService
+public class TokenService(
+    IOptions<JwtSettingsOptions> jwtOptions, IClock clock) : ITokenService
 {
     private readonly JwtSettingsOptions _jwt = jwtOptions.Value;
+    private readonly IClock _clock = clock;
 
     public string GenerateAccessToken(User user)
     {
@@ -38,12 +41,22 @@ public class TokenService(IOptions<JwtSettingsOptions> jwtOptions) : ITokenServi
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public string GenerateRefreshToken()
+    public RefreshToken GenerateRefreshToken(User user)
     {
         var randomBytes = new byte[64];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomBytes);
-        return Convert.ToBase64String(randomBytes);
+        var tokenString = Convert.ToBase64String(randomBytes);
+
+        var now = _clock.GetCurrentInstant();
+        var expiry = now.Plus(Duration.FromDays(_jwt.RefreshTokenDays));
+
+        return new RefreshToken(
+            id: Guid.NewGuid(),
+            userId: user.Id,
+            token: tokenString,
+            createdAt: now,
+            expiresAt: expiry);
     }
 
     public string GenerateSecureToken()

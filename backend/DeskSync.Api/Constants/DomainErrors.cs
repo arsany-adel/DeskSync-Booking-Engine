@@ -134,5 +134,10 @@ public static class DomainErrors
             code: "Auth.TwoFactorNotActivated",
             description: "Two-factor authentication setup was not completed. Please try enabling again."
         );
+
+        public static readonly Error AdminRequiresTwoFactor = Error.Unauthorized(
+            code: "Auth.AdminRequiresTwoFactor",
+            description: "Administrator accounts must have two-factor authentication enabled. Please set up 2FA before logging in."
+        );
     }
 }

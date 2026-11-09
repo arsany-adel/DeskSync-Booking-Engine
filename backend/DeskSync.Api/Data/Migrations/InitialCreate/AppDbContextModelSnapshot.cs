@@ -85,6 +85,39 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("DeskSync.Api.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Instant>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Instant>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Instant?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("DeskSync.Api.Entities.Reservation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -358,6 +391,17 @@ namespace DeskSync.Api.Data.Migrations.InitialCreate
                         .HasForeignKey("ReservationId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("DeskSync.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DeskSync.Api.Entities.RefreshToken", b =>
+                {
                     b.HasOne("DeskSync.Api.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")

@@ -15,4 +15,5 @@ public interface IAuthService
     Task<ErrorOr<Success>> VerifyAndActivateTwoFactorAsync(Guid userId, VerifyTwoFactorRequest dto);
     Task<ErrorOr<Success>> DisableTwoFactorAsync(Guid userId, DisableTwoFactorRequest dto);
     Task<ErrorOr<AuthResponse>> VerifyTwoFactorLoginAsync(VerifyTwoFactorLoginRequest dto);
+    Task<ErrorOr<Success>> LogoutAsync(string refreshToken);
 }

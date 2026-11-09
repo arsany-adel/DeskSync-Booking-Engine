@@ -15,6 +15,7 @@ namespace DeskSync.Api.Services;
 
 public class AuthService(
     IUserRepository userRepository,
+    IRefreshTokenRepository refreshTokenRepository,
     ITokenService tokenService,
     IEmailService emailService,
     IClock clock,
@@ -22,6 +23,7 @@ public class AuthService(
     IPasswordHasher<User> passwordHasher) : IAuthService
 {
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
     private readonly ITokenService _tokenService = tokenService;
     private readonly IEmailService _emailService = emailService;
     private readonly IClock _clock = clock;
@@ -60,14 +62,14 @@ public class AuthService(
                 <p>If you didn't create this account, you can safely ignore this email.</p>",
             plainTextBody: $"Welcome to DeskSync, {user.Username}!\n\nPlease confirm your email:\n{confirmLink}");
 
+        var refreshToken = _tokenService.GenerateRefreshToken(user);
+        await _refreshTokenRepository.AddAsync(refreshToken);
+        await _refreshTokenRepository.SaveChangesAsync();
+
         return new AuthResponse(
             _tokenService.GenerateAccessToken(user),
-            _tokenService.GenerateRefreshToken(),
-            user.Id,
-            user.Email,
-            user.Username,
-            user.Role.ToString()
-        );
+            refreshToken.Token,
+            user.Id, user.Email, user.Username, user.Role.ToString());
     }
 
     public async Task<ErrorOr<AuthResponse>> LoginStandardUserAsync(LoginUserRequestDto dto)
@@ -93,6 +95,11 @@ public class AuthService(
             await _userRepository.SaveChangesAsync();
         }
 
+        if (user.Role == UserRole.Admin && !user.TwoFactorEnabled)
+        {
+            return DomainErrors.Auth.AdminRequiresTwoFactor;
+        }
+
         if (user.TwoFactorEnabled)
         {
             return new AuthResponse(
@@ -104,19 +111,51 @@ public class AuthService(
                 Role: "RequiresTwoFactor");
         }
 
+        var refreshToken = _tokenService.GenerateRefreshToken(user);
+        await _refreshTokenRepository.AddAsync(refreshToken);
+        await _refreshTokenRepository.SaveChangesAsync();
+
         return new AuthResponse(
             _tokenService.GenerateAccessToken(user),
-            _tokenService.GenerateRefreshToken(),
-            user.Id,
-            user.Email,
-            user.Username,
-            user.Role.ToString()
-        );
+            refreshToken.Token,
+            user.Id, user.Email, user.Username, user.Role.ToString());
     }
 
-    public Task<ErrorOr<AuthResponse>> RefreshTokenAsync(string refreshToken)
+        public async Task<ErrorOr<AuthResponse>> RefreshTokenAsync(string refreshToken)
     {
-        return Task.FromResult<ErrorOr<AuthResponse>>(DomainErrors.Auth.RefreshNotImplemented);
+        var token = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+
+        if (token == null || token.RevokedAt != null)
+            return DomainErrors.Auth.InvalidToken;
+
+        if (token.ExpiresAt < _clock.GetCurrentInstant())
+            return DomainErrors.Auth.TokenExpired;
+
+        var user = token.User;
+
+        // Rotate: revoke the old one, issue a new one
+        token.Revoke();
+        var newRefreshToken = _tokenService.GenerateRefreshToken(user);
+        await _refreshTokenRepository.AddAsync(newRefreshToken);
+        await _refreshTokenRepository.SaveChangesAsync();
+
+        return new AuthResponse(
+            _tokenService.GenerateAccessToken(user),
+            newRefreshToken.Token,
+            user.Id, user.Email, user.Username, user.Role.ToString());
+    }
+
+    public async Task<ErrorOr<Success>> LogoutAsync(string refreshToken)
+    {
+        var token = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+
+        if (token != null && token.RevokedAt == null)
+        {
+            token.Revoke();
+            await _refreshTokenRepository.SaveChangesAsync();
+        }
+
+        return Result.Success;
     }
 
     public async Task<ErrorOr<Success>> ForgotPasswordAsync(ForgotPasswordRequest dto)
@@ -244,9 +283,13 @@ public class AuthService(
         if (!VerifyTotpCode(user.TwoFactorSecret, dto.Code))
             return DomainErrors.Auth.InvalidTwoFactorCode;
 
+        var refreshToken = _tokenService.GenerateRefreshToken(user);
+        await _refreshTokenRepository.AddAsync(refreshToken);
+        await _refreshTokenRepository.SaveChangesAsync();
+
         return new AuthResponse(
             _tokenService.GenerateAccessToken(user),
-            _tokenService.GenerateRefreshToken(),
+            refreshToken.Token,
             user.Id, user.Email, user.Username, user.Role.ToString());
     }
 
