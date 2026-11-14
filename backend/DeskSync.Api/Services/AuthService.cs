@@ -111,6 +111,11 @@ public class AuthService(
                 Role: "RequiresTwoFactor");
         }
 
+        if (dto.RevokeOtherSessions)
+        {
+            await _refreshTokenRepository.RevokeAllForUserAsync(user.Id, _clock.GetCurrentInstant());
+        }
+
         var refreshToken = _tokenService.GenerateRefreshToken(user);
         await _refreshTokenRepository.AddAsync(refreshToken);
         await _refreshTokenRepository.SaveChangesAsync();
@@ -163,6 +168,22 @@ public class AuthService(
         {
             token.Revoke();
             await _refreshTokenRepository.SaveChangesAsync();
+        }
+
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> LogoutAllAsync(Guid userId, string? currentRefreshToken = null)
+    {
+        var now = _clock.GetCurrentInstant();
+
+        if (string.IsNullOrWhiteSpace(currentRefreshToken))
+        {
+            await _refreshTokenRepository.RevokeAllForUserAsync(userId, now);
+        }
+        else
+        {
+            await _refreshTokenRepository.RevokeAllExceptAsync(userId, currentRefreshToken, now);
         }
 
         return Result.Success;
@@ -292,6 +313,11 @@ public class AuthService(
 
         if (!VerifyTotpCode(user.TwoFactorSecret, dto.Code))
             return DomainErrors.Auth.InvalidTwoFactorCode;
+
+        if (dto.RevokeOtherSessions)
+        {
+            await _refreshTokenRepository.RevokeAllForUserAsync(user.Id, _clock.GetCurrentInstant());
+        }
 
         var refreshToken = _tokenService.GenerateRefreshToken(user);
         await _refreshTokenRepository.AddAsync(refreshToken);

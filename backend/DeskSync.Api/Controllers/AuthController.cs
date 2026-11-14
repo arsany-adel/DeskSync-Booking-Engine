@@ -3,6 +3,7 @@ using DeskSync.Api.Extensions;
 using DeskSync.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace DeskSync.Api.Controllers;
 
@@ -42,6 +43,18 @@ public class AuthController(IAuthService authService) : BaseApiController
     {
         await _authService.LogoutAsync(dto.RefreshToken);
         return Ok(new { message = "Logged out successfully." });
+    }
+
+    [HttpPost("logout-all")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> LogoutAll(
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] LogoutAllRequest? dto = null)
+    {
+        var userId = User.GetUserId();
+        await _authService.LogoutAllAsync(userId, dto?.CurrentRefreshToken);
+        return Ok(new { message = "Sessions revoked successfully." });
     }
 
     [HttpPost("refresh")]

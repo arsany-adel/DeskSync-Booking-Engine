@@ -23,5 +23,10 @@ public class RefreshTokenRepository(AppDbContext context) : IRefreshTokenReposit
             .Where(t => t.UserId == userId && t.RevokedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, revokedAt));
 
+    public async Task RevokeAllExceptAsync(Guid userId, string activeToken, Instant revokedAt) =>
+        await _context.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null && t.Token != activeToken)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, revokedAt));
+
     public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
 }

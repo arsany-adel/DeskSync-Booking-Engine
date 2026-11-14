@@ -9,5 +9,7 @@ public record VerifyTwoFactorLoginRequest(
 
     [Required(ErrorMessage = "Authenticator code is required")]
     [StringLength(6, MinimumLength = 6, ErrorMessage = "Code must be 6 digits")]
-    string Code
+    string Code,
+
+    bool RevokeOtherSessions = false
 );
