@@ -9,4 +9,8 @@ public interface ISocialAuthService
     Task<ErrorOr<AuthResponse>> HandleExternalLoginAsync(
         ProviderType provider,
         ExternalUserInfo externalUser);
+    Task<ErrorOr<Success>> LinkExternalLoginAsync(
+        Guid userId, ProviderType provider, ExternalUserInfo externalUser);
+
+    Task<ErrorOr<Success>> UnlinkAsync(Guid userId, ProviderType provider);
 }

@@ -3,8 +3,10 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using DeskSync.Api.Configuration;
+using DeskSync.Api.Constants;
 using DeskSync.Api.Entities;
 using DeskSync.Api.Services.Interfaces;
+using ErrorOr;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NodaTime;
@@ -16,6 +18,8 @@ public class TokenService(
 {
     private readonly JwtSettingsOptions _jwt = jwtOptions.Value;
     private readonly IClock _clock = clock;
+
+    private const string StatePurpose = "oauth-state";
 
     public string GenerateAccessToken(User user)
     {
@@ -65,5 +69,79 @@ public class TokenService(
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomBytes);
         return Convert.ToBase64String(randomBytes).Replace("+", "-").Replace("/", "_").Replace("=", "");
+    }
+
+    public string GenerateOAuthState(Guid? userId, string provider)
+    {
+        var claims = new List<Claim>
+        {
+            new("purpose", StatePurpose),
+            new("provider", provider.ToLowerInvariant()),
+            new("nonce", Guid.NewGuid().ToString("N")),
+        };
+
+        if (userId.HasValue)
+            claims.Add(new("userId", userId.Value.ToString()));
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.SecretKey));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _jwt.Issuer,
+            audience: _jwt.Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(10),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public ErrorOr<Guid?> ValidateOAuthState(string state, string expectedProvider)
+    {
+        if (string.IsNullOrWhiteSpace(state))
+            return DomainErrors.Auth.OAuthStateInvalid;
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.SecretKey));
+
+        try
+        {
+            var principal = new JwtSecurityTokenHandler().ValidateToken(
+                state,
+                new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = _jwt.Issuer,
+                    ValidAudience = _jwt.Audience,
+                    IssuerSigningKey = key,
+                    ClockSkew = TimeSpan.Zero,
+                },
+                out _);
+
+            if (principal.FindFirstValue("purpose") != StatePurpose)
+                return DomainErrors.Auth.OAuthStateInvalid;
+
+            if (!string.Equals(
+                    principal.FindFirstValue("provider"),
+                    expectedProvider,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return DomainErrors.Auth.OAuthStateInvalid;
+            }
+
+            var userIdClaim = principal.FindFirstValue("userId");
+            if (userIdClaim is null)
+                return (Guid?)null; // login flow
+
+            return Guid.TryParse(userIdClaim, out var uid)
+                ? uid
+                : DomainErrors.Auth.OAuthStateInvalid;
+        }
+        catch
+        {
+            return DomainErrors.Auth.OAuthStateInvalid;
+        }
     }
 }

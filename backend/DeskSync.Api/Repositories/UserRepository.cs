@@ -80,5 +80,24 @@ public class UserRepository(AppDbContext context) : IUserRepository
             .ToListAsync();
     }
 
+    public async Task<UserLogin?> GetUserLoginByProviderAndUserAsync(ProviderType provider, Guid userId)
+        => await _context.UserLogins
+            .FirstOrDefaultAsync(l => l.Provider == provider && l.UserId == userId);
+
+    public async Task DeleteUserLoginAsync(ProviderType provider, Guid userId)
+        => await _context.UserLogins
+            .Where(l => l.Provider == provider && l.UserId == userId)
+            .ExecuteDeleteAsync();
+
+    public async Task<int> CountLinkedProvidersAsync(Guid userId)
+        => await _context.UserLogins
+            .CountAsync(l => l.UserId == userId);
+
+    public async Task<bool> HasPasswordAsync(Guid userId)
+        => await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.PasswordHash != null)
+            .FirstOrDefaultAsync();
+
     public async Task SaveChangesAsync() => await _context.SaveChangesAsync(); 
 }

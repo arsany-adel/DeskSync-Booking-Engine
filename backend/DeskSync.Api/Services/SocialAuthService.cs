@@ -39,7 +39,11 @@ public class SocialAuthService(
 
         if (userByEmail != null)
         {
-            // PRD Edge Case C: Auto-link ONLY if the provider says the email is verified (we already checked above)
+            // PRD Edge Case C: auto-link only if BOTH sides verified.
+            // externalUser.EmailVerified is already checked at the top.
+            if (!userByEmail.EmailConfirmed)
+                return DomainErrors.Auth.OAuthEmailNotVerified;
+
             var newLogin = new UserLogin(provider, externalUser.ProviderKey, userByEmail.Id);
             await _userRepository.AddUserLoginAsync(newLogin);
             await _userRepository.SaveChangesAsync();
@@ -89,5 +93,49 @@ public class SocialAuthService(
             user.Email,
             user.Username,
             user.Role.ToString());
+    }
+
+    public async Task<ErrorOr<Success>> LinkExternalLoginAsync(
+        Guid userId, ProviderType provider, ExternalUserInfo externalUser)
+    {
+        if (!externalUser.EmailVerified)
+            return DomainErrors.Auth.OAuthEmailNotVerified;
+
+        var user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null)
+            return DomainErrors.Auth.InvalidCredentials;
+
+        var existingForUser = await _userRepository
+            .GetUserLoginByProviderAndUserAsync(provider, userId);
+        if (existingForUser != null)
+            return DomainErrors.Auth.LinkingAlreadyLinked;
+
+        var existingIdentity = await _userRepository
+            .GetUserLoginAsync(provider, externalUser.ProviderKey);
+        if (existingIdentity != null)
+            return DomainErrors.Auth.LinkingProviderAlreadyLinked;
+
+        var login = new UserLogin(provider, externalUser.ProviderKey, userId);
+        await _userRepository.AddUserLoginAsync(login);
+        await _userRepository.SaveChangesAsync();
+
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> UnlinkAsync(Guid userId, ProviderType provider)
+    {
+        var existing = await _userRepository.GetUserLoginByProviderAndUserAsync(provider, userId);
+        if (existing == null)
+            return DomainErrors.Auth.LinkingNotLinked;
+
+        var hasPassword = await _userRepository.HasPasswordAsync(userId);
+        var linkedCount = await _userRepository.CountLinkedProvidersAsync(userId);
+
+        // Lockout guard: no password + this is the only provider = removing it locks the user out.
+        if (!hasPassword && linkedCount <= 1)
+            return DomainErrors.Auth.LinkingWouldLockOut;
+
+        await _userRepository.DeleteUserLoginAsync(provider, userId);
+        return Result.Success;
     }
 }

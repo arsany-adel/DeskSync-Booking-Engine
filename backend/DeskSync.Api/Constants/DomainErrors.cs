@@ -154,5 +154,35 @@ public static class DomainErrors
             code: "Auth.OAuthFailed",
             description: "Social login failed. Please try again."
         );
+
+        public static readonly Error LinkingProviderAlreadyLinked = Error.Conflict(
+            code: "Auth.LinkingProviderAlreadyLinked",
+            description: "This social account is already linked to a different DeskSync user."
+        );
+
+        public static readonly Error LinkingAlreadyLinked = Error.Conflict(
+            code: "Auth.LinkingAlreadyLinked",
+            description: "This provider is already linked to your account."
+        );
+
+        public static readonly Error LinkingNotLinked = Error.NotFound(
+            code: "Auth.LinkingNotLinked",
+            description: "This provider is not linked to your account."
+        );
+
+        public static readonly Error LinkingWouldLockOut = Error.Validation(
+            code: "Auth.LinkingWouldLockOut",
+            description: "You cannot remove your only authentication method. Set a password or link another provider first."
+        );
+
+        public static readonly Error LinkingStateInvalid = Error.Unauthorized(
+            code: "Auth.LinkingStateInvalid",
+            description: "The linking request is invalid or has expired. Please start again."
+        );
+
+        public static readonly Error OAuthStateInvalid = Error.Unauthorized(
+            code: "Auth.OAuthStateInvalid",
+            description: "The login request is invalid or has expired. Please start again."
+        );
     }
 }
