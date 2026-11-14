@@ -105,9 +105,9 @@ public class SocialAuthController(
 
     [HttpGet("google/callback")]
     public async Task<IActionResult> HandleGoogleCallback(
-        [FromQuery] string code, [FromQuery] string state)
+        [FromQuery] string? code = null, [FromQuery] string? state = null)
     {
-        var stateResult = _tokenService.ValidateOAuthState(state, "google");
+        var stateResult = _tokenService.ValidateOAuthState(state ?? string.Empty, "google");
         if (stateResult.IsError)
             return Redirect($"{_frontendBaseUrl}/login?error=invalid_state");
 
@@ -204,9 +204,9 @@ public class SocialAuthController(
 
     [HttpGet("microsoft/callback")]
     public async Task<IActionResult> HandleMicrosoftCallback(
-        [FromQuery] string code, [FromQuery] string state)
+    [FromQuery] string? code, [FromQuery] string? state)
     {
-        var stateResult = _tokenService.ValidateOAuthState(state, "microsoft");
+        var stateResult = _tokenService.ValidateOAuthState(state ?? string.Empty, "microsoft");
         if (stateResult.IsError)
             return Redirect($"{_frontendBaseUrl}/login?error=invalid_state");
 
