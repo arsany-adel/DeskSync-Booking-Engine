@@ -3,7 +3,9 @@ namespace DeskSync.Api.Entities;
 public class Bookmark
 {
     public Guid RoomId { get; private set; }
+    public Room Room { get; private set; } = null!;
     public Guid UserId { get; private set; }
+    public User User { get; private set; } = null!;
 
     public Bookmark(Guid roomId, Guid userId)
     {

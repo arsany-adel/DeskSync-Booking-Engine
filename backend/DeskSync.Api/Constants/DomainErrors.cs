@@ -51,4 +51,138 @@ public static class DomainErrors
             description: "Cannot delete a reservation that has already started. Historical records must be preserved."
         );
     }
+
+    public static class Notification
+    {
+        public static readonly Error NotFound = Error.NotFound(
+            code: "Notification.NotFound",
+            description: "Notification not found."
+        );
+
+        public static readonly Error Unauthorized = Error.Unauthorized(
+            code: "Notification.Unauthorized",
+            description: "You do not have permission to modify this notification."
+        );
+    }
+
+    public static class Email
+    {
+        public static readonly Error SendFailed = Error.Failure(
+            code: "Email.SendFailed",
+            description: "Failed to send email. Please try again later."
+        );
+    }
+
+    public static class Auth
+    {
+        public static readonly Error InvalidCredentials = Error.Unauthorized(
+            code: "Auth.InvalidCredentials",
+            description: "Invalid email or password."
+        );
+
+        public static readonly Error EmailAlreadyInUse = Error.Conflict(
+            code: "Auth.EmailAlreadyInUse",
+            description: "Email is already in use."
+        );
+
+        public static readonly Error UsernameAlreadyInUse = Error.Conflict(
+            code: "Auth.UsernameAlreadyInUse",
+            description: "Username is already in use."
+        );
+
+        public static readonly Error RefreshNotImplemented = Error.Failure(
+            code: "Auth.RefreshNotImplemented",
+            description: "Refresh token flow is not yet implemented."
+        );
+
+        public static readonly Error InvalidToken = Error.Unauthorized(
+            code: "Auth.InvalidToken",
+            description: "The provided token is invalid."
+        );
+
+        public static readonly Error TokenExpired = Error.Unauthorized(
+            code: "Auth.TokenExpired",
+            description: "The provided token has expired."
+        );
+
+        public static readonly Error EmailNotConfirmed = Error.Unauthorized(
+            code: "Auth.EmailNotConfirmed",
+            description: "Please confirm your email address before logging in."
+        );
+
+        public static readonly Error AccountHasNoPassword = Error.Validation(
+            code: "Auth.AccountHasNoPassword",
+            description: "This account was created via social login. Use 'Forgot Password' to set a password."
+        );
+
+                public static readonly Error TwoFactorNotEnabled = Error.Validation(
+            code: "Auth.TwoFactorNotEnabled",
+            description: "Two-factor authentication is not enabled for this account."
+        );
+
+        public static readonly Error InvalidTwoFactorCode = Error.Unauthorized(
+            code: "Auth.InvalidTwoFactorCode",
+            description: "The authenticator code is invalid or expired."
+        );
+
+        public static readonly Error TwoFactorAlreadyEnabled = Error.Conflict(
+            code: "Auth.TwoFactorAlreadyEnabled",
+            description: "Two-factor authentication is already enabled."
+        );
+
+        public static readonly Error TwoFactorNotActivated = Error.Validation(
+            code: "Auth.TwoFactorNotActivated",
+            description: "Two-factor authentication setup was not completed. Please try enabling again."
+        );
+
+        public static readonly Error AdminRequiresTwoFactor = Error.Unauthorized(
+            code: "Auth.AdminRequiresTwoFactor",
+            description: "Administrator accounts must have two-factor authentication enabled. Please set up 2FA before logging in."
+        );
+
+        public static readonly Error OAuthProviderNotSupported = Error.Validation(
+            code: "Auth.OAuthProviderNotSupported",
+            description: "The requested social login provider is not supported."
+        );
+
+        public static readonly Error OAuthEmailNotVerified = Error.Unauthorized(
+            code: "Auth.OAuthEmailNotVerified",
+            description: "Your social provider did not return a verified email address. Please verify your email with the provider first."
+        );
+
+        public static readonly Error OAuthFailed = Error.Failure(
+            code: "Auth.OAuthFailed",
+            description: "Social login failed. Please try again."
+        );
+
+        public static readonly Error LinkingProviderAlreadyLinked = Error.Conflict(
+            code: "Auth.LinkingProviderAlreadyLinked",
+            description: "This social account is already linked to a different DeskSync user."
+        );
+
+        public static readonly Error LinkingAlreadyLinked = Error.Conflict(
+            code: "Auth.LinkingAlreadyLinked",
+            description: "This provider is already linked to your account."
+        );
+
+        public static readonly Error LinkingNotLinked = Error.NotFound(
+            code: "Auth.LinkingNotLinked",
+            description: "This provider is not linked to your account."
+        );
+
+        public static readonly Error LinkingWouldLockOut = Error.Validation(
+            code: "Auth.LinkingWouldLockOut",
+            description: "You cannot remove your only authentication method. Set a password or link another provider first."
+        );
+
+        public static readonly Error LinkingStateInvalid = Error.Unauthorized(
+            code: "Auth.LinkingStateInvalid",
+            description: "The linking request is invalid or has expired. Please start again."
+        );
+
+        public static readonly Error OAuthStateInvalid = Error.Unauthorized(
+            code: "Auth.OAuthStateInvalid",
+            description: "The login request is invalid or has expired. Please start again."
+        );
+    }
 }

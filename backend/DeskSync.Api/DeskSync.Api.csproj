@@ -7,15 +7,21 @@
     <UserSecretsId>60f952ec-cbc3-4b7a-86a0-1b422c208c51</UserSecretsId>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="ErrorOr" />
-    <PackageReference Include="Hangfire" />
-    <PackageReference Include="Hangfire.PostgreSql" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
-    <PackageReference Include="NodaTime" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
-    <PackageReference Include="Swashbuckle.AspNetCore" />
-  </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="ErrorOr" />
+      <PackageReference Include="Hangfire" />
+      <PackageReference Include="Hangfire.PostgreSql" />
+      <PackageReference Include="MailKit" />
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+      <PackageReference Include="NodaTime" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
+      <PackageReference Include="Otp.NET" />
+      <PackageReference Include="Swashbuckle.AspNetCore" />
+      <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    </ItemGroup>
 
 </Project>

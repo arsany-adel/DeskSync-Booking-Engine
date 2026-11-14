@@ -7,17 +7,41 @@ namespace DeskSync.Api.Configuration;
 
 public static class SystemRegistration
 {
-    public static IServiceCollection AddConfigurationSettings(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddConfigurationSettings(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         services.AddOptions<WorkerSettingsOptions>()
             .Bind(configuration.GetSection(WorkerSettingsOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<SmtpSettingsOptions>()
+            .Bind(configuration.GetSection(SmtpSettingsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<JwtSettingsOptions>()
+            .Bind(configuration.GetSection(JwtSettingsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<FrontendSettingsOptions>()
+            .Bind(configuration.GetSection(FrontendSettingsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<OAuthSettingsOptions>()
+            .Bind(configuration.GetSection(OAuthSettingsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         return services;
     }
 
-    public static IServiceCollection AddBackgroundJobs(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddBackgroundJobs(
+        this IServiceCollection services,
+        string connectionString)
     {
         services.AddScoped<ITzdbSyncService, TzdbSyncService>();
 
@@ -26,7 +50,8 @@ public static class SystemRegistration
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString))
+                .UsePostgreSqlStorage(options =>
+                    options.UseNpgsqlConnection(connectionString))
         );
 
         services.AddHangfireServer();

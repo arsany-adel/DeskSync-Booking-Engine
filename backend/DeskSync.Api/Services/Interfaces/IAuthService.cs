@@ -1,11 +1,21 @@
-using System.Security.Claims;
 using DeskSync.Api.DTOs.Users;
+using ErrorOr;
 
 namespace DeskSync.Api.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task RegisterStandardUserAsync(RegisterStandardUserRequestDto dto);
-
-    Task<ClaimsPrincipal> LoginStandardUserAsync(LoginUserRequestDto dto);    
+    Task<ErrorOr<AuthResponse>> RegisterStandardUserAsync(RegisterStandardUserRequestDto dto);
+    Task<ErrorOr<AuthResponse>> LoginStandardUserAsync(LoginUserRequestDto dto);
+    Task<ErrorOr<AuthResponse>> RefreshTokenAsync(string refreshToken);
+    Task<ErrorOr<Success>> ForgotPasswordAsync(ForgotPasswordRequest dto);
+    Task<ErrorOr<Success>> ResetPasswordAsync(ResetPasswordRequest dto);
+    Task<ErrorOr<Success>> ConfirmEmailAsync(ConfirmEmailRequest dto);
+    Task<ErrorOr<EnableTwoFactorResponse>> EnableTwoFactorAsync(Guid userId);
+    Task<ErrorOr<Success>> VerifyAndActivateTwoFactorAsync(Guid userId, VerifyTwoFactorRequest dto);
+    Task<ErrorOr<Success>> DisableTwoFactorAsync(Guid userId, DisableTwoFactorRequest dto);
+    Task<ErrorOr<AuthResponse>> VerifyTwoFactorLoginAsync(VerifyTwoFactorLoginRequest dto);
+    Task<ErrorOr<Success>> LogoutAsync(string refreshToken);
+    Task<ErrorOr<Success>> LogoutAllAsync(Guid userId, string? currentRefreshToken = null);
+    Task<ErrorOr<UserProfileResponse>> GetProfileAsync(Guid userId);
 }
