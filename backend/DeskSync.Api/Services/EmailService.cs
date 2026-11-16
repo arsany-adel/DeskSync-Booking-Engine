@@ -1,12 +1,13 @@
 using DeskSync.Api.Configuration;
+using DeskSync.Api.Constants;
 using DeskSync.Api.Data;
 using DeskSync.Api.Services.Interfaces;
+using ErrorOr;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using MimeKit.Text;
 using NodaTime;
 
 namespace DeskSync.Api.Services;
@@ -23,6 +24,62 @@ public class EmailService(
     private readonly ILogger<EmailService> _logger = logger;
 
     private static readonly TimeSpan SendTimeout = TimeSpan.FromSeconds(15);
+
+    public async Task<ErrorOr<Success>> SendEmailAsync(
+        string toEmail,
+        string subject,
+        string htmlBody,
+        string plainTextBody,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("DeskSync", _smtp.FromAddress));
+            message.To.Add(MailboxAddress.Parse(toEmail));
+            message.Subject = subject;
+
+            var bodyBuilder = new BodyBuilder
+            {
+                TextBody = plainTextBody,
+                HtmlBody = htmlBody,
+            };
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new SmtpClient();
+
+            client.CheckCertificateRevocation = false; 
+
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(SendTimeout);
+
+            var socketOptions = _smtp.UseStartTls
+                ? SecureSocketOptions.StartTls
+                : SecureSocketOptions.SslOnConnect;
+
+            await client.ConnectAsync(_smtp.Host, _smtp.Port, socketOptions, cts.Token);
+
+            if (!string.IsNullOrWhiteSpace(_smtp.Username) && !string.IsNullOrWhiteSpace(_smtp.Password))
+            {
+                await client.AuthenticateAsync(_smtp.Username, _smtp.Password, cts.Token);
+            }
+
+            await client.SendAsync(message, cts.Token);
+
+            try { await client.DisconnectAsync(quit: true, CancellationToken.None); } catch { }
+
+            return Result.Success;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email to {ToEmail}.", toEmail);
+            return DomainErrors.Email.SendFailed;
+        }
+    }
 
     public async Task SendNotificationEmailAsync(
         Guid notificationId,
@@ -167,4 +224,6 @@ public class EmailService(
 
         return message;
     }
+
+    
 }

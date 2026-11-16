@@ -22,7 +22,7 @@ public class UserLoginConfiguration : IEntityTypeConfiguration<UserLogin>
         builder.Property(l => l.UserId)
                .IsRequired();
 
-        builder.HasOne<User>()
+        builder.HasOne(l => l.User)       
                .WithMany()
                .HasForeignKey(l => l.UserId)
                .OnDelete(DeleteBehavior.Cascade);

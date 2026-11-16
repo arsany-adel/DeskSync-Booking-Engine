@@ -11,9 +11,9 @@ public abstract class BaseApiController : ControllerBase
 {
     protected ActionResult ErrorResult(List<Error> errors)
     {
-        if (errors.Count is 0) //if for some reason the IsError was True and no error in list 
+        if (errors.Count is 0)
         {
-            return Problem();// error Code 500 Internal Server Error
+            return Problem();
         }
 
         var firstError = errors[0];
@@ -23,7 +23,8 @@ public abstract class BaseApiController : ControllerBase
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             ErrorType.Validation => StatusCodes.Status400BadRequest,
             ErrorType.Conflict => StatusCodes.Status409Conflict,
-            ErrorType.Unauthorized => StatusCodes.Status403Forbidden,
+            ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
             _ => StatusCodes.Status500InternalServerError
         };
 

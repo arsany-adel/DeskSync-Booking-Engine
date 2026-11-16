@@ -1,6 +1,9 @@
+using System.Text;
 using DeskSync.Api.Configuration;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
-
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,15 +17,71 @@ builder.Services.AddApplicationServices();
 builder.Services.AddConfigurationSettings(builder.Configuration);
 builder.Services.AddBackgroundJobs(connectionString);
 builder.Services.AddApiControllers();
-builder.Services.AddSwaggerDocumentation();
+builder.Services.AddHttpClient(); // <-- NEW
 
-builder.Services.AddAuthentication(defaultScheme: "Bearer")
-    .AddBearerToken("Bearer");
+// Swagger with JWT
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter your JWT token."
+    });
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
+
+// JWT Authentication
+var jwtSection = builder.Configuration.GetSection(JwtSettingsOptions.SectionName);
+var jwtSecret = jwtSection["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is missing.");
+var jwtIssuer = jwtSection["Issuer"] ?? "DeskSync";
+var jwtAudience = jwtSection["Audience"] ?? "DeskSyncFrontend";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ClockSkew = TimeSpan.Zero,
+        };
+    });
+
+// 👇 REMOVED ALL OAUTH MIDDLEWARE 👇
+
 builder.Services.AddAuthorization();
+
+// CORS
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
-// Maps UnauthorizedAccessException to 401 instead of 500
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -49,13 +108,12 @@ if (app.Environment.IsDevelopment())
     app.UseHangfireDashboard("/hangfire");
 }
 
+app.UseCors("FrontendPolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Don't forget Hangfire Dashboard you must secure it with authentication and authorization in production
-
 app.UseRecurringJobs();
 
 app.Run();

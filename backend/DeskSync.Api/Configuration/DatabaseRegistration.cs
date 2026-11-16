@@ -23,6 +23,7 @@ public static class DatabaseRegistration
         services.AddScoped<IReservationRepository, ReservationRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         return services;
     }

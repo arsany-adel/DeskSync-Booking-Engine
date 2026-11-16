@@ -1,61 +1,161 @@
-using System.Security.Authentication;
 using DeskSync.Api.DTOs.Users;
+using DeskSync.Api.Extensions;
 using DeskSync.Api.Services.Interfaces;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace DeskSync.Api.Controllers;
 
 [ApiController]
-[Route("/api/auth")]
-public class AuthController(IAuthService authService) : ControllerBase
+[Route("api/auth")]
+public class AuthController(IAuthService authService) : BaseApiController
 {
     private readonly IAuthService _authService = authService;
 
     [HttpPost("register")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] RegisterStandardUserRequestDto dto)
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterStandardUserRequestDto dto)
     {
-        try
-        {
-            await _authService.RegisterStandardUserAsync(dto);
-            return StatusCode(StatusCodes.Status201Created, new {Message = "Registeration Successful."});
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new {Error = ex.Message});
-        }
+        var result = await _authService.RegisterStandardUserAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return StatusCode(StatusCodes.Status201Created, result.Value);
     }
 
     [HttpPost("login")]
-    [ProducesResponseType(typeof(AccessTokenResponse) ,StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromBody] LoginUserRequestDto dto)
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginUserRequestDto dto)
     {
-        try
-        {
-            var principal = await _authService.LoginStandardUserAsync(dto);
-            return SignIn(principal, authenticationScheme: "Bearer");
-        }
-        catch (InvalidCredentialException ex)
-        {
-            return Unauthorized(new {Error = ex.Message});
-        }
+        var result = await _authService.LoginStandardUserAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(result.Value);
     }
 
-    // This route expects the refresh token (and not the access token) in the Authorization header instead of a JSON body
-    [HttpPost("refresh")]
-    [ProducesResponseType(typeof(AccessTokenResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Refresh()
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest dto)
     {
-        var result = await HttpContext.AuthenticateAsync("Bearer_Refresh");
+        await _authService.LogoutAsync(dto.RefreshToken);
+        return Ok(new { message = "Logged out successfully." });
+    }
 
-        if (!result.Succeeded)
-            return Unauthorized("Invalid or expired refresh token");
+    [HttpPost("logout-all")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> LogoutAll(
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] LogoutAllRequest? dto = null)
+    {
+        var userId = User.GetUserId();
+        await _authService.LogoutAllAsync(userId, dto?.CurrentRefreshToken);
+        return Ok(new { message = "Sessions revoked successfully." });
+    }
 
-        return SignIn(result.Principal, authenticationScheme: "Bearer");
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponse>> Refresh([FromBody] RefreshTokenRequest dto)
+    {
+        var result = await _authService.RefreshTokenAsync(dto.RefreshToken);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(result.Value);
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest dto)
+    {
+        var result = await _authService.ForgotPasswordAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "If the email exists, a reset link has been sent." });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest dto)
+    {
+        var result = await _authService.ResetPasswordAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "Password has been reset successfully." });
+    }
+
+    [HttpPost("confirm-email")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest dto)
+    {
+        var result = await _authService.ConfirmEmailAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "Email confirmed successfully." });
+    }
+
+    [HttpPost("2fa/enable")]
+    [Authorize]
+    [ProducesResponseType(typeof(EnableTwoFactorResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<EnableTwoFactorResponse>> EnableTwoFactor()
+    {
+        var userId = User.GetUserId();
+        var result = await _authService.EnableTwoFactorAsync(userId);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(result.Value);
+    }
+
+    [HttpPost("2fa/verify")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyAndActivateTwoFactor([FromBody] VerifyTwoFactorRequest dto)
+    {
+        var userId = User.GetUserId();
+        var result = await _authService.VerifyAndActivateTwoFactorAsync(userId, dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "Two-factor authentication enabled successfully." });
+    }
+
+    [HttpPost("2fa/disable")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DisableTwoFactor([FromBody] DisableTwoFactorRequest dto)
+    {
+        var userId = User.GetUserId();
+        var result = await _authService.DisableTwoFactorAsync(userId, dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(new { message = "Two-factor authentication disabled." });
+    }
+
+    [HttpPost("2fa/login")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponse>> VerifyTwoFactorLogin([FromBody] VerifyTwoFactorLoginRequest dto)
+    {
+        var result = await _authService.VerifyTwoFactorLoginAsync(dto);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(result.Value);
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserProfileResponse>> GetMe()
+    {
+        var userId = User.GetUserId();
+        var result = await _authService.GetProfileAsync(userId);
+        if (result.IsError) return ErrorResult(result.Errors);
+        return Ok(result.Value);
     }
 }

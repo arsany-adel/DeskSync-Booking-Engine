@@ -12,6 +12,8 @@ public static class ApplicationRegistration
     {
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<ISocialAuthService, SocialAuthService>();
 
         services.AddScoped<IReservationService, ReservationService>();
         services.AddScoped<IRoomService, RoomService>();
@@ -19,6 +21,7 @@ public static class ApplicationRegistration
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<INotificationWorkerService, NotificationWorkerService>();
+        services.AddScoped<INotificationCleanupService, NotificationCleanupService>();
 
         services.AddSingleton<IClock>(SystemClock.Instance);
         services.AddSingleton<IDateTimeZoneProvider>(DateTimeZoneProviders.Tzdb);

@@ -10,6 +10,7 @@ public class UserLogin
 {
     public ProviderType Provider { get; private set; }
     public string ProviderKey { get; private set; }
+    public User User { get; private set; } = null!;
     public Guid UserId { get; private set; }
 
     public UserLogin(ProviderType provider, string providerKey, Guid userId)
