@@ -11,7 +11,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserLogin> UserLogins => Set<UserLogin>();
     public DbSet<Reservation> Reservations => Set<Reservation>();
     public DbSet<Bookmark> Bookmarks => Set<Bookmark>();
-
+    public DbSet<Notification> Notifications => Set<Notification>();
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

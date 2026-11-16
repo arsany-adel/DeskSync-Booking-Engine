@@ -6,8 +6,9 @@ public class Reservation
 {
     public Guid Id { get; private set; }
     public Guid RoomId { get; private set; }
+    public Room Room { get; set; } = null!;
     public Guid UserId { get; private set; }
-
+    public User User { get; set; } = null!;
     // What the user intended
     public LocalDateTime LocalStartTime { get; private set; }
     public LocalDateTime LocalEndTime { get; private set; }
